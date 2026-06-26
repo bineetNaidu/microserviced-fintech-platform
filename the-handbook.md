@@ -15,7 +15,7 @@ The distinction is not cosmetic. It is architectural. Real fintech systems must 
 - What happens if the database write succeeds for Alice but fails for Bob? Is money created from nowhere, or destroyed entirely?
 - What happens if the same payment request is sent twice due to a network retry? Do we charge twice?
 - What happens if a service crashes mid-transfer, after money has left Alice's account but before it has arrived in Bob's?
-- How do we know *who* changed *what* and *when*, with irrefutable evidence?
+- How do we know _who_ changed _what_ and _when_, with irrefutable evidence?
 - How do we scale the payment processing component independently of the user management component?
 - How do we detect that a service is degrading before it completely fails?
 
@@ -27,7 +27,7 @@ These are not edge cases. These are the everyday realities of financial systems.
 
 When you write a simple Node.js application, everything lives in one process. Your user logic, your payment logic, your notification logic — all of it runs together. This is called a **monolith**. Monoliths are not inherently bad. They are easy to develop and debug in the early stages of a product. But they have a ceiling.
 
-Imagine your payment processing function starts consuming excessive CPU during a sale. In a monolith, this slows down *every other feature too* — including login, which is computationally cheap. You cannot scale one part without scaling everything. You cannot deploy a fix to the notification system without redeploying the payment system. You cannot let a junior developer work on the user profile feature without giving them access to the payment code.
+Imagine your payment processing function starts consuming excessive CPU during a sale. In a monolith, this slows down _every other feature too_ — including login, which is computationally cheap. You cannot scale one part without scaling everything. You cannot deploy a fix to the notification system without redeploying the payment system. You cannot let a junior developer work on the user profile feature without giving them access to the payment code.
 
 A **distributed system** breaks these concerns apart. Each concern becomes a separate, independently deployable unit called a **service** or **microservice**. These services communicate with each other over a network — sometimes directly (HTTP), sometimes indirectly through a message queue.
 
@@ -41,7 +41,7 @@ Before we write a single line of design, internalize these principles. They info
 
 **Correctness over speed.** In fintech, a bug that sends money to the wrong account, or fails to send it at all, is not a UX inconvenience. It is a regulatory and legal event. The system must be designed to be correct first. Performance is optimized within the constraints of correctness.
 
-**Explicit over implicit.** Every financial state change must be recorded explicitly. We do not infer what happened from the current state. We store every event, every entry, every mutation with a full audit trail. If something goes wrong, you must be able to reconstruct *exactly* what happened and in what order.
+**Explicit over implicit.** Every financial state change must be recorded explicitly. We do not infer what happened from the current state. We store every event, every entry, every mutation with a full audit trail. If something goes wrong, you must be able to reconstruct _exactly_ what happened and in what order.
 
 **Immutability of financial records.** Once a ledger entry is written, it is never modified or deleted. Corrections are made by writing new, offsetting entries. This is not a technical preference — it is an accounting principle with legal standing.
 
@@ -55,7 +55,7 @@ Before we write a single line of design, internalize these principles. They info
 
 ### 1.4 The Technology Stack — Rationale
 
-You were given a technology stack. Here is *why* each piece was chosen, which matters more than knowing what it is.
+You were given a technology stack. Here is _why_ each piece was chosen, which matters more than knowing what it is.
 
 **Node.js and TypeScript** are your application runtime and language. Node.js handles I/O-heavy workloads efficiently, which is the dominant workload in backend services that talk to databases and message queues. TypeScript gives you compile-time type safety, which is essential in a system where data flows across many service boundaries. Without types, you are guessing what shape a message from another service will arrive in.
 
@@ -115,9 +115,9 @@ This project will always store monetary amounts in paise.
 
 A common beginner model of a bank account is: "it is a row in a table with a `balance` column." This model breaks in multiple ways. If two transfers happen simultaneously and both read the balance before either writes it back, you get the classic **race condition**: money is duplicated or destroyed.
 
-More importantly, this model loses history. You cannot answer "what was this account's balance at 3pm on Tuesday?" A balance column tells you what the balance *is right now*. That is all.
+More importantly, this model loses history. You cannot answer "what was this account's balance at 3pm on Tuesday?" A balance column tells you what the balance _is right now_. That is all.
 
-The correct model, which this system implements, is the **double-entry ledger**. We will cover this in full detail in Chapter 3. For now, understand that: an account's balance is not stored. It is *calculated* by summing all the entries associated with that account. The entries are immutable. The balance is derived.
+The correct model, which this system implements, is the **double-entry ledger**. We will cover this in full detail in Chapter 3. For now, understand that: an account's balance is not stored. It is _calculated_ by summing all the entries associated with that account. The entries are immutable. The balance is derived.
 
 #### Transfers are processes, not operations
 
@@ -408,17 +408,17 @@ services/transfer-service/
 
 Let us examine each layer in detail, because the separation of concerns here is critical and non-obvious.
 
-**`routes/`** contains only route *declarations* — the mapping between an HTTP method and path, and the chain of middleware and controller functions that handle it. There is no logic here. A route file reads like a table of contents for the API.
+**`routes/`** contains only route _declarations_ — the mapping between an HTTP method and path, and the chain of middleware and controller functions that handle it. There is no logic here. A route file reads like a table of contents for the API.
 
-**`controllers/`** contains *request handlers*. A controller's job is to extract data from the HTTP request (path params, query params, request body, authenticated user identity), call the appropriate service function with that data, and format the response. Controllers do not contain business logic. They do not talk to the database. They are the translation layer between HTTP and your domain logic.
+**`controllers/`** contains _request handlers_. A controller's job is to extract data from the HTTP request (path params, query params, request body, authenticated user identity), call the appropriate service function with that data, and format the response. Controllers do not contain business logic. They do not talk to the database. They are the translation layer between HTTP and your domain logic.
 
-**`services/`** contains *business logic*. This is where the rules of your domain live. The transfer service's service layer decides whether a transfer is valid, orchestrates the steps of the Saga, and decides what events to publish. Service functions receive plain data objects, not HTTP request objects. This separation means your business logic can be tested without starting an HTTP server.
+**`services/`** contains _business logic_. This is where the rules of your domain live. The transfer service's service layer decides whether a transfer is valid, orchestrates the steps of the Saga, and decides what events to publish. Service functions receive plain data objects, not HTTP request objects. This separation means your business logic can be tested without starting an HTTP server.
 
-**`repositories/`** contains *data access logic*. Every database query lives here. A repository function takes parameters and returns domain objects. It knows about SQL and your database schema. It does not know about business rules. This separation means you can swap your database driver or ORM without touching your business logic.
+**`repositories/`** contains _data access logic_. Every database query lives here. A repository function takes parameters and returns domain objects. It knows about SQL and your database schema. It does not know about business rules. This separation means you can swap your database driver or ORM without touching your business logic.
 
-**`events/`** contains *messaging logic*. Publishers know how to format and send events to RabbitMQ. Consumers know how to receive and parse events. Event logic is isolated here so it does not pollute your business logic.
+**`events/`** contains _messaging logic_. Publishers know how to format and send events to RabbitMQ. Consumers know how to receive and parse events. Event logic is isolated here so it does not pollute your business logic.
 
-**`validators/`** contains *input validation schemas*. These are defined using a schema validation library like Zod. They run before your controller code and reject malformed requests early. Validation logic does not belong in controllers or services.
+**`validators/`** contains _input validation schemas_. These are defined using a schema validation library like Zod. They run before your controller code and reject malformed requests early. Validation logic does not belong in controllers or services.
 
 This layered architecture is sometimes called **Clean Architecture** or **Layered Architecture**. The key principle is the **Dependency Rule**: outer layers can depend on inner layers, but inner layers must never depend on outer layers. Your repository knows nothing about HTTP. Your service knows nothing about RabbitMQ message formats. Your controller knows nothing about SQL.
 
@@ -691,8 +691,8 @@ services:
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     ports:
-      - 5672:5672    # AMQP protocol port
-      - 15672:15672  # Management UI
+      - 5672:5672 # AMQP protocol port
+      - 15672:15672 # Management UI
     volumes:
       - ./infra/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json
 
@@ -709,8 +709,8 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:latest
     ports:
-      - 16686:16686  # Jaeger UI
-      - 4318:4318    # OpenTelemetry HTTP collector
+      - 16686:16686 # Jaeger UI
+      - 4318:4318 # OpenTelemetry HTTP collector
 
 volumes:
   postgres_data:
@@ -982,21 +982,21 @@ Now, the most counterintuitive part: **debits and credits do not mean "decrease"
 
 The meaning of debit and credit depends on the **type** of account:
 
-| Account Type | Debit Effect | Credit Effect |
-|---|---|---|
-| Asset (things you own) | Increases balance | Decreases balance |
+| Account Type               | Debit Effect      | Credit Effect     |
+| -------------------------- | ----------------- | ----------------- |
+| Asset (things you own)     | Increases balance | Decreases balance |
 | Liability (things you owe) | Decreases balance | Increases balance |
-| Revenue (money earned) | Decreases balance | Increases balance |
-| Expense (money spent) | Increases balance | Decreases balance |
+| Revenue (money earned)     | Decreases balance | Increases balance |
+| Expense (money spent)      | Increases balance | Decreases balance |
 
 For a fintech platform, you are primarily dealing with **asset accounts** (customer wallets) and **liability accounts** (pending/in-transit funds). So for the purposes of this system, the most important rules are:
 
 - **Debit an asset account** → the account's balance goes up (the owner has more money)
 - **Credit an asset account** → the account's balance goes down (the owner has less money)
 
-Wait — that is backwards from what you would expect. In everyday language, "credit" means money coming in. But in double-entry accounting, crediting Alice's asset account means her balance *decreases*.
+Wait — that is backwards from what you would expect. In everyday language, "credit" means money coming in. But in double-entry accounting, crediting Alice's asset account means her balance _decreases_.
 
-This seems confusing, but the reason becomes clear when you think about it from the bank's perspective. When you deposit money at a bank, the bank is in debt to you — your deposit is a *liability* for the bank. When the bank "credits your account," they are increasing their liability to you, which is the correct direction for a liability account.
+This seems confusing, but the reason becomes clear when you think about it from the bank's perspective. When you deposit money at a bank, the bank is in debt to you — your deposit is a _liability_ for the bank. When the bank "credits your account," they are increasing their liability to you, which is the correct direction for a liability account.
 
 For this project, you do not need to be a professional accountant. You need to understand one concrete mental model:
 
@@ -1037,17 +1037,17 @@ The **ledger** is the append-only record of every financial event. It is the sin
 
 A ledger entry has the following structure:
 
-| Field | Description |
-|---|---|
-| `id` | Unique identifier for this entry |
-| `transaction_id` | Groups entries that belong to the same financial event |
-| `account_id` | Which account this entry affects |
-| `entry_type` | Either DEBIT or CREDIT |
-| `amount` | The amount in paise (always positive) |
-| `currency` | INR in this system |
-| `created_at` | Immutable timestamp |
-| `description` | Human-readable description |
-| `metadata` | Additional context (transfer ID, reference number, etc.) |
+| Field            | Description                                              |
+| ---------------- | -------------------------------------------------------- |
+| `id`             | Unique identifier for this entry                         |
+| `transaction_id` | Groups entries that belong to the same financial event   |
+| `account_id`     | Which account this entry affects                         |
+| `entry_type`     | Either DEBIT or CREDIT                                   |
+| `amount`         | The amount in paise (always positive)                    |
+| `currency`       | INR in this system                                       |
+| `created_at`     | Immutable timestamp                                      |
+| `description`    | Human-readable description                               |
+| `metadata`       | Additional context (transfer ID, reference number, etc.) |
 
 The critical property: **ledger entries are never modified or deleted.** They are immutable. If a mistake is made, a correction is made by writing new, offsetting entries — not by changing the original.
 
@@ -1104,12 +1104,14 @@ The books balance. No money was created or destroyed.
 Alice's balance = sum of all DEBIT entries to alice_wallet − sum of all CREDIT entries to alice_wallet
 
 If Alice started with ₹5,000 (500,000 paise), her previous state would have been:
+
 - DEBIT of 500,000 (initial deposit)
 - No credits yet
 
 Her balance before this transfer: 500,000 − 0 = 500,000 paise = ₹5,000 ✓
 
 After the transfer is recorded:
+
 - DEBIT of 500,000 (initial deposit)
 - CREDIT of 50,000 (this transfer)
 
@@ -1229,12 +1231,12 @@ Each customer who creates a wallet gets an entry in this chart. Their balance is
 
 **System Accounts (managed by the platform):**
 
-| Account Name | Type | Purpose |
-|---|---|---|
+| Account Name            | Type      | Purpose                                |
+| ----------------------- | --------- | -------------------------------------- |
 | `SYS_SUSPENSE_TRANSFER` | Liability | Holds funds during in-flight transfers |
-| `SYS_SUSPENSE_DEPOSIT` | Liability | Holds funds during deposit processing |
-| `SYS_REVENUE_FEES` | Revenue | Records platform fee income |
-| `SYS_EXPENSE_REFUNDS` | Expense | Records refunds paid out |
+| `SYS_SUSPENSE_DEPOSIT`  | Liability | Holds funds during deposit processing  |
+| `SYS_REVENUE_FEES`      | Revenue   | Records platform fee income            |
+| `SYS_EXPENSE_REFUNDS`   | Expense   | Records refunds paid out               |
 
 These system accounts are created when the platform is first deployed. They are permanent and never closed. Their balances reveal the financial health of the platform itself.
 
@@ -1413,16 +1415,16 @@ Topic exchanges give you flexible routing: a service can subscribe to a broad pa
 
 For this system, you define one **topic exchange per domain**:
 
-| Exchange Name | Domain | Example Routing Keys |
-|---|---|---|
-| `fintech.transfers` | Transfer events | `transfer.requested`, `transfer.completed` |
-| `fintech.accounts` | Account events | `account.created`, `account.frozen` |
-| `fintech.ledger` | Ledger events | `ledger.transaction.posted` |
-| `fintech.deposits` | Deposit events | `deposit.completed` |
-| `fintech.users` | User events | `user.created`, `user.verified` |
+| Exchange Name           | Domain              | Example Routing Keys                       |
+| ----------------------- | ------------------- | ------------------------------------------ |
+| `fintech.transfers`     | Transfer events     | `transfer.requested`, `transfer.completed` |
+| `fintech.accounts`      | Account events      | `account.created`, `account.frozen`        |
+| `fintech.ledger`        | Ledger events       | `ledger.transaction.posted`                |
+| `fintech.deposits`      | Deposit events      | `deposit.completed`                        |
+| `fintech.users`         | User events         | `user.created`, `user.verified`            |
 | `fintech.notifications` | Notification events | `notification.sent`, `notification.failed` |
-| `fintech.audit` | Audit events | `audit.logged` |
-| `fintech.scheduler` | Scheduler events | `schedule.executed`, `schedule.failed` |
+| `fintech.audit`         | Audit events        | `audit.logged`                             |
+| `fintech.scheduler`     | Scheduler events    | `schedule.executed`, `schedule.failed`     |
 
 ---
 
@@ -1496,14 +1498,14 @@ Every message published to RabbitMQ follows a standard envelope format. This con
 ```typescript
 // Conceptual structure — illustrative only
 interface EventEnvelope<T> {
-  eventId: string;          // Unique ID for this event instance (UUID v4)
-  eventType: string;        // e.g. "transfer.completed"
-  eventVersion: string;     // e.g. "1.0" — for schema evolution
-  producerService: string;  // e.g. "transfer-service"
-  correlationId: string;    // Traces the original request across services
-  causationId: string;      // The eventId that caused this event to be produced
-  occurredAt: string;       // ISO 8601 timestamp
-  payload: T;               // The actual event data, typed by T
+  eventId: string; // Unique ID for this event instance (UUID v4)
+  eventType: string; // e.g. "transfer.completed"
+  eventVersion: string; // e.g. "1.0" — for schema evolution
+  producerService: string; // e.g. "transfer-service"
+  correlationId: string; // Traces the original request across services
+  causationId: string; // The eventId that caused this event to be produced
+  occurredAt: string; // ISO 8601 timestamp
+  payload: T; // The actual event data, typed by T
 }
 ```
 
@@ -1536,7 +1538,7 @@ The DLQ is a separate queue that holds failed messages indefinitely, preserving 
 
 The Operations Service dashboard shows the current message count in every DLQ. A non-empty DLQ is an alert condition — it means some messages are failing to process and require attention. The Operations Service provides a tool to inspect DLQ messages and requeue them to the original queue once the underlying bug has been fixed.
 
-**Poison messages** are a specific type of DLQ inhabitant: messages that are syntactically valid but will *always* fail processing due to invalid data. For example, a `transfer.completed` event that references an account ID that does not exist in the Notification Service's local data. These cannot be fixed by retrying — they require investigation and potentially manual data correction before reprocessing.
+**Poison messages** are a specific type of DLQ inhabitant: messages that are syntactically valid but will _always_ fail processing due to invalid data. For example, a `transfer.completed` event that references an account ID that does not exist in the Notification Service's local data. These cannot be fixed by retrying — they require investigation and potentially manual data correction before reprocessing.
 
 ---
 
@@ -1887,12 +1889,14 @@ A JWT has three parts, separated by dots: `header.payload.signature`
 The **header** declares the token type (JWT) and the signing algorithm used.
 
 The **payload** contains the claims. The standard claims are:
+
 - `sub` — the subject (user ID)
 - `iat` — issued at (timestamp)
 - `exp` — expiration timestamp
 - `jti` — JWT ID (a unique identifier for this token instance)
 
 Your system adds custom claims:
+
 - `role` — the user's role (customer, admin, etc.)
 - `sessionId` — links the token to a specific session
 
@@ -1944,6 +1948,7 @@ On registration: the provided password is hashed with bcrypt and only the hash i
 On login: the provided password is run through bcrypt's comparison function against the stored hash. bcrypt handles the salt automatically — you do not extract and compare salts manually.
 
 Additional security measures:
+
 - **Login rate limiting**: a maximum of 5 failed login attempts per IP per 15 minutes, enforced in Redis. After 5 failures, further attempts return `429` regardless of whether the credentials are correct. This prevents brute-force attacks.
 - **Timing-safe comparison**: always use bcrypt's comparison function, never a simple string equality check. String equality in JavaScript short-circuits on the first mismatching character, which leaks information through timing differences (a **timing attack**). bcrypt's comparison always takes the same amount of time.
 
@@ -2214,18 +2219,13 @@ interface AuthUser {
   createdAt: Date;
 }
 
-type UserRole =
-  | 'customer'
-  | 'support_agent'
-  | 'auditor'
-  | 'manager'
-  | 'admin';
+type UserRole = 'customer' | 'support_agent' | 'auditor' | 'manager' | 'admin';
 
 interface JwtPayload {
-  sub: string;        // userId
+  sub: string; // userId
   role: UserRole;
   sessionId: string;
-  jti: string;        // unique token ID, for blocklist
+  jti: string; // unique token ID, for blocklist
   iat: number;
   exp: number;
 }
@@ -3163,6 +3163,7 @@ For transparency, here is the logic (not the code) for calculating a current bal
 **Step 1:** Find the most recent snapshot for the account. Get its `balance` and `snapshot_at` timestamp.
 
 **Step 2:** Sum all ledger entries for this account created after `snapshot_at`.
+
 - For DEBIT entries on asset accounts: add to the snapshot balance.
 - For CREDIT entries on asset accounts: subtract from the snapshot balance.
 
@@ -3455,6 +3456,7 @@ The Transfer Service publishes `transfer.completed`. The Notification Service an
 Now consider what happens when Step 8 fails — the Ledger Service is temporarily unavailable when Phase 2 is attempted.
 
 At this point:
+
 - Alice's wallet has been debited (Phase 1 succeeded)
 - The suspense account holds Alice's ₹500
 - Bob's wallet has not been credited
@@ -4600,7 +4602,7 @@ schedule.failed        → Notify user if scheduled transfer failed
 
 ### 8.17 Handling the `approval.created` Event for Manager Notification
 
-When a large transfer needs approval, all active managers and admins should be notified. The Notification Service does not know who the managers are — it only has a cache of users it has already seen. 
+When a large transfer needs approval, all active managers and admins should be notified. The Notification Service does not know who the managers are — it only has a cache of users it has already seen.
 
 The solution: the Notification Service maintains a separate `manager_recipients` cache, populated by consuming `user.registered` events where the role is `manager` or `admin`, and updated when roles change via `user.role_changed` events. When `approval.created` arrives, the service queries this cache and sends a notification to every active manager and admin.
 
@@ -5361,19 +5363,9 @@ This package is the lingua franca of the entire system. It defines the core doma
 // Purpose: The canonical shape of a user across the system.
 // Every service that needs to work with user data uses these types.
 
-export type UserRole =
-  | 'customer'
-  | 'support_agent'
-  | 'auditor'
-  | 'manager'
-  | 'admin';
+export type UserRole = 'customer' | 'support_agent' | 'auditor' | 'manager' | 'admin';
 
-export type KycStatus =
-  | 'pending'
-  | 'submitted'
-  | 'verified'
-  | 'rejected'
-  | 'suspended';
+export type KycStatus = 'pending' | 'submitted' | 'verified' | 'rejected' | 'suspended';
 
 export interface User {
   id: string;
@@ -5427,9 +5419,9 @@ export interface Account {
 
 export interface AccountLimits {
   accountId: string;
-  dailyTransferLimit: number;       // in paise
-  singleTransferLimit: number;      // in paise
-  monthlyTransferLimit: number;     // in paise
+  dailyTransferLimit: number; // in paise
+  singleTransferLimit: number; // in paise
+  monthlyTransferLimit: number; // in paise
 }
 ```
 
@@ -5452,7 +5444,7 @@ export interface Transfer {
   idempotencyKey: string;
   sourceAccountId: string;
   destinationAccountId: string;
-  amount: number;                   // in paise
+  amount: number; // in paise
   currency: string;
   description: string | null;
   status: TransferStatus;
@@ -5508,7 +5500,7 @@ export interface LedgerEntry {
   transactionId: string;
   accountId: string;
   entryType: LedgerEntryType;
-  amount: number;                   // in paise, always positive
+  amount: number; // in paise, always positive
   currency: string;
   description: string | null;
   createdAt: Date;
@@ -5526,7 +5518,7 @@ export interface LedgerTransaction {
 
 export interface AccountBalance {
   accountId: string;
-  balance: number;                  // in paise
+  balance: number; // in paise
   currency: string;
   calculatedAt: Date;
   snapshotUsed: boolean;
@@ -5546,10 +5538,10 @@ DTOs (Data Transfer Objects) are the types that travel over HTTP. They are disti
 export interface CreateTransferRequest {
   sourceAccountId: string;
   destinationAccountId: string;
-  amount: number;           // in paise
+  amount: number; // in paise
   currency: 'INR';
   description?: string;
-  scheduledAt?: string;     // ISO 8601
+  scheduledAt?: string; // ISO 8601
 }
 
 export interface CreateTransferResponse {
@@ -5593,10 +5585,10 @@ export interface PaginatedResponse<T> {
 }
 
 export interface ApiError {
-  error: string;           // machine-readable error code: "INSUFFICIENT_FUNDS"
-  message: string;         // human-readable description
-  details?: unknown;       // additional context, varies by error type
-  correlationId: string;   // for tracing the error
+  error: string; // machine-readable error code: "INSUFFICIENT_FUNDS"
+  message: string; // human-readable description
+  details?: unknown; // additional context, varies by error type
+  correlationId: string; // for tracing the error
   timestamp: string;
 }
 
@@ -5631,7 +5623,7 @@ export interface EventEnvelope<T = unknown> {
   producerService: string;
   correlationId: string;
   causationId: string | null;
-  occurredAt: string;           // ISO 8601
+  occurredAt: string; // ISO 8601
   payload: T;
 }
 ```
@@ -5696,20 +5688,15 @@ export interface TransferReversalFailedPayload {
 }
 
 // Typed event envelope aliases — used by publishers and consumers
-export type TransferRequestedEvent =
-  EventEnvelope<TransferRequestedPayload>;
+export type TransferRequestedEvent = EventEnvelope<TransferRequestedPayload>;
 
-export type TransferCompletedEvent =
-  EventEnvelope<TransferCompletedPayload>;
+export type TransferCompletedEvent = EventEnvelope<TransferCompletedPayload>;
 
-export type TransferFailedEvent =
-  EventEnvelope<TransferFailedPayload>;
+export type TransferFailedEvent = EventEnvelope<TransferFailedPayload>;
 
-export type TransferReversedEvent =
-  EventEnvelope<TransferReversedPayload>;
+export type TransferReversedEvent = EventEnvelope<TransferReversedPayload>;
 
-export type TransferReversalFailedEvent =
-  EventEnvelope<TransferReversalFailedPayload>;
+export type TransferReversalFailedEvent = EventEnvelope<TransferReversalFailedPayload>;
 ```
 
 ```typescript
@@ -5746,61 +5733,61 @@ export type AccountFrozenEvent = EventEnvelope<AccountFrozenPayload>;
 
 export const EventTypes = {
   // Transfer events
-  TRANSFER_REQUESTED:        'transfer.requested',
+  TRANSFER_REQUESTED: 'transfer.requested',
   TRANSFER_PENDING_APPROVAL: 'transfer.pending_approval',
-  TRANSFER_COMPLETED:        'transfer.completed',
-  TRANSFER_FAILED:           'transfer.failed',
-  TRANSFER_REVERSED:         'transfer.reversed',
-  TRANSFER_REVERSAL_FAILED:  'transfer.reversal_failed',
+  TRANSFER_COMPLETED: 'transfer.completed',
+  TRANSFER_FAILED: 'transfer.failed',
+  TRANSFER_REVERSED: 'transfer.reversed',
+  TRANSFER_REVERSAL_FAILED: 'transfer.reversal_failed',
 
   // Account events
-  ACCOUNT_CREATED:   'account.created',
-  ACCOUNT_FROZEN:    'account.frozen',
-  ACCOUNT_UNFROZEN:  'account.unfrozen',
-  ACCOUNT_CLOSED:    'account.closed',
+  ACCOUNT_CREATED: 'account.created',
+  ACCOUNT_FROZEN: 'account.frozen',
+  ACCOUNT_UNFROZEN: 'account.unfrozen',
+  ACCOUNT_CLOSED: 'account.closed',
 
   // Ledger events
-  LEDGER_TRANSACTION_POSTED:       'ledger.transaction.posted',
+  LEDGER_TRANSACTION_POSTED: 'ledger.transaction.posted',
   LEDGER_RECONCILIATION_COMPLETED: 'ledger.reconciliation.completed',
-  LEDGER_RECONCILIATION_FAILED:    'ledger.reconciliation.failed',
+  LEDGER_RECONCILIATION_FAILED: 'ledger.reconciliation.failed',
 
   // Deposit events
-  DEPOSIT_INITIATED:            'deposit.initiated',
-  DEPOSIT_COMPLETED:            'deposit.completed',
-  DEPOSIT_FAILED:               'deposit.failed',
+  DEPOSIT_INITIATED: 'deposit.initiated',
+  DEPOSIT_COMPLETED: 'deposit.completed',
+  DEPOSIT_FAILED: 'deposit.failed',
   DEPOSIT_ADMIN_CREDIT_APPLIED: 'deposit.admin_credit_applied',
 
   // User events
-  USER_REGISTERED:            'user.registered',
-  USER_EMAIL_VERIFIED:        'user.email_verified',
-  USER_LOGGED_IN:             'user.logged_in',
-  USER_PASSWORD_CHANGED:      'user.password_changed',
-  USER_SUSPENDED:             'user.suspended',
-  USER_PROFILE_UPDATED:       'user.profile_updated',
-  USER_KYC_STATUS_CHANGED:    'user.kyc_status_changed',
+  USER_REGISTERED: 'user.registered',
+  USER_EMAIL_VERIFIED: 'user.email_verified',
+  USER_LOGGED_IN: 'user.logged_in',
+  USER_PASSWORD_CHANGED: 'user.password_changed',
+  USER_SUSPENDED: 'user.suspended',
+  USER_PROFILE_UPDATED: 'user.profile_updated',
+  USER_KYC_STATUS_CHANGED: 'user.kyc_status_changed',
 
   // Approval events
-  APPROVAL_CREATED:  'approval.created',
+  APPROVAL_CREATED: 'approval.created',
   APPROVAL_APPROVED: 'approval.approved',
   APPROVAL_REJECTED: 'approval.rejected',
-  APPROVAL_EXPIRED:  'approval.expired',
+  APPROVAL_EXPIRED: 'approval.expired',
 
   // Notification events
-  NOTIFICATION_SENT:   'notification.sent',
+  NOTIFICATION_SENT: 'notification.sent',
   NOTIFICATION_FAILED: 'notification.failed',
 
   // Schedule events
-  SCHEDULE_CREATED:           'schedule.created',
-  SCHEDULE_TRANSFER_DUE:      'schedule.transfer_due',
-  SCHEDULE_EXECUTED:          'schedule.executed',
-  SCHEDULE_FAILED:            'schedule.failed',
-  SCHEDULE_CANCELLED:         'schedule.cancelled',
-  SCHEDULE_APPROVAL_EXPIRY:   'schedule.approval_expiry_check',
-  SCHEDULE_RECONCILIATION:    'schedule.reconciliation_due',
+  SCHEDULE_CREATED: 'schedule.created',
+  SCHEDULE_TRANSFER_DUE: 'schedule.transfer_due',
+  SCHEDULE_EXECUTED: 'schedule.executed',
+  SCHEDULE_FAILED: 'schedule.failed',
+  SCHEDULE_CANCELLED: 'schedule.cancelled',
+  SCHEDULE_APPROVAL_EXPIRY: 'schedule.approval_expiry_check',
+  SCHEDULE_RECONCILIATION: 'schedule.reconciliation_due',
 } as const;
 
 // Derive a union type of all valid event type strings
-export type EventType = typeof EventTypes[keyof typeof EventTypes];
+export type EventType = (typeof EventTypes)[keyof typeof EventTypes];
 ```
 
 ---
@@ -5822,7 +5809,7 @@ export abstract class AppError extends Error {
   constructor(
     message: string,
     isOperational = true,
-    public readonly details?: unknown
+    public readonly details?: unknown,
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -5840,10 +5827,7 @@ export class NotFoundError extends AppError {
   readonly statusCode = 404;
   readonly errorCode: string;
   constructor(resource: string, id?: string) {
-    super(id
-      ? `${resource} with ID ${id} not found`
-      : `${resource} not found`
-    );
+    super(id ? `${resource} with ID ${id} not found` : `${resource} not found`);
     this.errorCode = `${resource.toUpperCase().replace(' ', '_')}_NOT_FOUND`;
   }
 }
@@ -5877,7 +5861,10 @@ export class ConflictError extends AppError {
 export class ValidationError extends AppError {
   readonly statusCode = 422;
   readonly errorCode = 'VALIDATION_ERROR';
-  constructor(message: string, public readonly fields?: Record<string, string>) {
+  constructor(
+    message: string,
+    public readonly fields?: Record<string, string>,
+  ) {
     super(message, true, fields);
   }
 }
@@ -5908,11 +5895,11 @@ export class InsufficientFundsError extends AppError {
   constructor(
     public readonly accountId: string,
     public readonly availableBalance: number,
-    public readonly requiredAmount: number
+    public readonly requiredAmount: number,
   ) {
     super(
       `Insufficient funds. Available: ${availableBalance} paise, ` +
-      `required: ${requiredAmount} paise.`
+        `required: ${requiredAmount} paise.`,
     );
   }
 }
@@ -5936,13 +5923,8 @@ export class AccountClosedError extends AppError {
 export class TransferLimitExceededError extends AppError {
   readonly statusCode = 422;
   readonly errorCode = 'EXCEEDS_TRANSFER_LIMIT';
-  constructor(
-    limitType: 'single' | 'daily' | 'monthly',
-    limit: number
-  ) {
-    super(
-      `Transfer exceeds the ${limitType} limit of ${limit} paise.`
-    );
+  constructor(limitType: 'single' | 'daily' | 'monthly', limit: number) {
+    super(`Transfer exceeds the ${limitType} limit of ${limit} paise.`);
   }
 }
 
@@ -5959,7 +5941,7 @@ export class IdempotencyConflictError extends AppError {
   readonly errorCode = 'IDEMPOTENCY_KEY_ALREADY_USED';
   constructor(
     public readonly existingResourceId: string,
-    public readonly existingStatus: string
+    public readonly existingStatus: string,
   ) {
     super('This request has already been processed.');
   }
@@ -6065,14 +6047,14 @@ export interface QueueDefinition {
   durable: boolean;
   deadLetterExchange: string;
   deadLetterRoutingKey: string;
-  messageTtl?: number;      // optional: max time a message sits in queue
-  maxLength?: number;       // optional: max messages before oldest is dropped
+  messageTtl?: number; // optional: max time a message sits in queue
+  maxLength?: number; // optional: max messages before oldest is dropped
 }
 
 export interface BindingDefinition {
   queue: string;
   exchange: string;
-  routingKey: string;       // supports wildcards: * and #
+  routingKey: string; // supports wildcards: * and #
 }
 ```
 
@@ -6081,7 +6063,7 @@ export interface BindingDefinition {
 // Publishes events to RabbitMQ exchanges.
 
 export interface PublishOptions {
-  persistent: boolean;      // survive RabbitMQ restarts
+  persistent: boolean; // survive RabbitMQ restarts
   correlationId: string;
   contentType: 'application/json';
 }
@@ -6107,7 +6089,7 @@ export interface PublishOptions {
 
 export interface ConsumeOptions {
   queue: string;
-  prefetchCount: number;    // how many unacked messages to hold at once
+  prefetchCount: number; // how many unacked messages to hold at once
   // Lower values: slower but less work lost if consumer crashes
   // Higher values: faster throughput but more reprocessing on crash
 }
@@ -6175,8 +6157,8 @@ export interface DatabaseClient {
 // the next page. Insertions do not affect the page boundaries.
 
 export interface PaginationOptions {
-  cursor?: string;          // base64-encoded cursor from previous response
-  limit: number;            // between 1 and 100
+  cursor?: string; // base64-encoded cursor from previous response
+  limit: number; // between 1 and 100
   direction: 'asc' | 'desc';
 }
 
@@ -6367,33 +6349,33 @@ Every log entry emitted by every service in this system includes a mandatory set
 // Conceptual structure — not literal code
 interface BaseLogFields {
   level: 'debug' | 'info' | 'warn' | 'error' | 'fatal';
-  timestamp: string;         // ISO 8601, always UTC
-  service: string;           // e.g. 'transfer-service'
-  version: string;           // service version e.g. '1.4.2'
-  environment: string;       // 'development' | 'staging' | 'production'
-  message: string;           // human-readable description of what happened
-  correlationId: string;     // ties log to the originating request
-  traceId?: string;          // OpenTelemetry trace ID (when inside a trace span)
-  spanId?: string;           // OpenTelemetry span ID
+  timestamp: string; // ISO 8601, always UTC
+  service: string; // e.g. 'transfer-service'
+  version: string; // service version e.g. '1.4.2'
+  environment: string; // 'development' | 'staging' | 'production'
+  message: string; // human-readable description of what happened
+  correlationId: string; // ties log to the originating request
+  traceId?: string; // OpenTelemetry trace ID (when inside a trace span)
+  spanId?: string; // OpenTelemetry span ID
 }
 
 // Request-scoped additional fields (attached by request logger middleware):
 interface RequestLogFields extends BaseLogFields {
-  method: string;            // HTTP method
-  path: string;              // URL path (sanitised — no query params with PII)
+  method: string; // HTTP method
+  path: string; // URL path (sanitised — no query params with PII)
   statusCode: number;
   durationMs: number;
-  userId?: string;           // authenticated user ID, if present
+  userId?: string; // authenticated user ID, if present
   userRole?: string;
   contentLength?: number;
 }
 
 // Error log additional fields:
 interface ErrorLogFields extends BaseLogFields {
-  error: string;             // error message
-  errorCode: string;         // machine-readable error code
-  stack?: string;            // stack trace (development and staging only)
-  isOperational: boolean;    // is this an expected operational error?
+  error: string; // error message
+  errorCode: string; // machine-readable error code
+  stack?: string; // stack trace (development and staging only)
+  isOperational: boolean; // is this an expected operational error?
 }
 ```
 
@@ -6414,6 +6396,7 @@ Log levels exist to let you filter signal from noise. The levels in this system,
 ### 10.6 What to Log — And What Not to Log
 
 **Always log:**
+
 - Service startup and shutdown (with configuration summary excluding secrets)
 - Every incoming HTTP request and outgoing response (method, path, status, duration)
 - Every event published to RabbitMQ
@@ -6425,6 +6408,7 @@ Log levels exist to let you filter signal from noise. The levels in this system,
 - Every DLQ message received (with full payload for debugging)
 
 **Never log:**
+
 - Passwords, PINs, or any credentials
 - Full JWT tokens or refresh tokens
 - Credit card numbers, bank account numbers, or PAN numbers
@@ -6459,6 +6443,7 @@ The logging utility reads from `AsyncLocalStorage` to inject `correlationId` and
 ### 10.8 What Metrics Are For
 
 Metrics answer questions about system behaviour over time:
+
 - What is the current request rate to the Transfer Service?
 - What fraction of transfer requests are failing?
 - How long does the Ledger Service take to calculate a balance?
@@ -6519,6 +6504,7 @@ From a histogram, Prometheus can calculate percentile latencies using the `histo
 Every service exposes the following standard metrics. These are automatically collected by the shared middleware and the shared messaging package — service code does not need to instrument them manually.
 
 **HTTP Metrics (all services):**
+
 ```
 fintech_http_requests_total
   Labels: service, method, path, status_code
@@ -6538,6 +6524,7 @@ fintech_http_requests_in_flight
 ```
 
 **Database Metrics (all services with PostgreSQL):**
+
 ```
 fintech_db_query_duration_ms
   Labels: service, operation (select/insert/update)
@@ -6561,6 +6548,7 @@ fintech_db_errors_total
 ```
 
 **RabbitMQ Metrics (all services using messaging):**
+
 ```
 fintech_messages_published_total
   Labels: service, exchange, routing_key
@@ -6586,6 +6574,7 @@ fintech_queue_depth
 **Business Metrics (domain-specific):**
 
 Transfer Service:
+
 ```
 fintech_transfers_initiated_total
   Labels: currency
@@ -6620,6 +6609,7 @@ fintech_transfers_pending_approval
 ```
 
 Ledger Service:
+
 ```
 fintech_ledger_transactions_posted_total
   Labels: reference_type
@@ -6636,6 +6626,7 @@ fintech_reconciliation_result
 ```
 
 Account Service:
+
 ```
 fintech_accounts_created_total
   Type: Counter
@@ -6664,6 +6655,7 @@ Distributed tracing answers this. A trace is a record of the complete journey of
 **A Trace** is the complete record of a request's journey. It has a unique `traceId` (a 128-bit identifier) that is generated when the request first enters the system at the API Gateway and propagated to every subsequent service.
 
 **A Span** is one unit of work within a trace. Each service that participates in handling the request creates one or more spans. A span records:
+
 - Its parent span ID (creating a tree structure)
 - The operation name (e.g. "POST /transfers", "ledger.postTransaction", "db.query")
 - Start time and duration
@@ -6756,7 +6748,7 @@ The `correlationId` that flows through your system and the `traceId` that flows 
 
 An alert should wake someone up only if human action is required immediately. Alerts that fire when everything is actually fine (false positives) train engineers to ignore them. Alerts that are too noisy get muted. Both outcomes are dangerous.
 
-The right alerting philosophy: **alert on symptoms, not causes.** 
+The right alerting philosophy: **alert on symptoms, not causes.**
 
 A symptom is something the user experiences: transfers are failing, logins are slow, notifications are not arriving. A cause is something internal: database CPU is high, a queue is backing up, a cache is cold. Symptoms directly represent user impact. Causes may or may not manifest as user impact (a high-CPU database might still be serving requests fast enough).
 
@@ -6850,6 +6842,7 @@ Grafana dashboards provide continuous visual visibility into system health. Each
 **System Overview Dashboard** (for operations team, always visible on a screen)
 
 This is the first dashboard anyone opens when investigating an issue. It shows:
+
 - Request rate per service (line graph, last 1 hour)
 - Error rate per service (line graph)
 - P99 latency per service (line graph)
@@ -6898,12 +6891,12 @@ interface HealthCheckResponse {
   service: string;
   status: 'healthy' | 'degraded' | 'unhealthy';
   version: string;
-  uptime: number;               // seconds since process start
+  uptime: number; // seconds since process start
   dependencies: {
-    name: string;               // 'postgresql' | 'redis' | 'rabbitmq'
+    name: string; // 'postgresql' | 'redis' | 'rabbitmq'
     status: 'healthy' | 'unhealthy';
-    latencyMs: number;          // time to complete the health check query
-    error?: string;             // error message if unhealthy
+    latencyMs: number; // time to complete the health check query
+    error?: string; // error message if unhealthy
   }[];
   timestamp: string;
 }
@@ -7034,11 +7027,11 @@ Service-to-service HTTP calls are made through the `clients/` layer in each serv
 // Conceptual structure — illustrative only
 
 interface RetryConfig {
-  maxAttempts: number;           // e.g. 3
-  baseDelayMs: number;           // e.g. 100ms
-  maxDelayMs: number;            // e.g. 5000ms — cap the exponential growth
+  maxAttempts: number; // e.g. 3
+  baseDelayMs: number; // e.g. 100ms
+  maxDelayMs: number; // e.g. 5000ms — cap the exponential growth
   retryableStatusCodes: number[]; // e.g. [408, 429, 502, 503, 504]
-  retryableErrors: string[];     // e.g. ['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND']
+  retryableErrors: string[]; // e.g. ['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND']
 }
 
 // The retry wrapper:
@@ -7160,6 +7153,7 @@ Circuit breaker state transitions must be observable. Every state transition emi
 A log entry at `warn` level: "Circuit breaker for LedgerService transitioned to OPEN. Failure rate: 67% over last 10 seconds."
 
 A metric event:
+
 ```
 fintech_circuit_breaker_state
   Labels: service, target_service, state (closed/open/half_open)
@@ -7173,8 +7167,8 @@ An alert fires when any critical-path circuit breaker enters OPEN state:
 Alert: CriticalCircuitBreakerOpen
 Condition: fintech_circuit_breaker_state{severity="critical"} == 1
 Severity: critical
-Message: "Circuit breaker from {{ $labels.service }} to
-          {{ $labels.target_service }} is OPEN."
+Message: 'Circuit breaker from {{ $labels.service }} to
+  {{ $labels.target_service }} is OPEN.'
 ```
 
 ---
@@ -7229,13 +7223,9 @@ Every event consumer records processed events in a `processed_events` table. The
 ```typescript
 // Conceptual structure of a properly idempotent consumer
 
-async function handleTransferCompleted(
-  event: TransferCompletedEvent
-): Promise<void> {
-
+async function handleTransferCompleted(event: TransferCompletedEvent): Promise<void> {
   // Step 1: Begin a database transaction
   await db.transaction(async (txn) => {
-
     // Step 2: Attempt to record this event as processed.
     // If this insert fails due to a unique constraint violation,
     // the event has already been processed — throw a known error
@@ -7245,7 +7235,7 @@ async function handleTransferCompleted(
        VALUES ($1, $2, NOW())
        ON CONFLICT (event_id) DO NOTHING
        RETURNING event_id`,
-      [event.eventId, event.eventType]
+      [event.eventId, event.eventType],
     );
 
     if (inserted.length === 0) {
@@ -7347,6 +7337,7 @@ The operational posture for DLQs:
 **Investigate before reprocessing.** A message in the DLQ failed for a reason. That reason may be a bug, invalid data, or a downstream outage. Before reprocessing, understand why it failed. Reprocessing without fixing the root cause will just send it back to the DLQ.
 
 **Classify the failure:**
+
 - **Infrastructure failure** (downstream service was down, database was unavailable): the message is valid but could not be processed due to a transient condition. Fix the infrastructure, then reprocess.
 - **Application bug** (a code bug caused the consumer to throw an error): fix the bug, deploy the fix, then reprocess.
 - **Poison message** (invalid data that will always fail regardless of infrastructure or bugs): investigate the data, determine if it represents a real business event that must be recorded, and either manually apply the effect or discard the message with documentation.
@@ -7384,6 +7375,7 @@ Not all problems are equal. The incident severity framework defines the urgency 
 **SEV-1 (Critical)**: System-wide financial correctness is compromised, or the platform is completely unavailable.
 
 Examples:
+
 - Ledger reconciliation failure
 - Transfer reversal failure (money stranded)
 - All transfers failing (100% error rate)
@@ -7394,6 +7386,7 @@ Response: Immediate response required. Wake up on-call engineer regardless of ti
 **SEV-2 (High)**: A core feature is partially unavailable or significantly degraded for a large portion of users.
 
 Examples:
+
 - Transfer success rate below 90%
 - Login failure rate above 10%
 - Ledger Service P99 latency above 10 seconds
@@ -7404,6 +7397,7 @@ Response: Response required within 15 minutes. On-call engineer notified. Invest
 **SEV-3 (Medium)**: A feature is degraded but the system is functional. Or a non-critical feature is unavailable.
 
 Examples:
+
 - Notifications are delayed (Notification Service down)
 - Reporting dashboards are stale
 - Scheduled transfers are delayed (Scheduler Service slow)
@@ -7414,6 +7408,7 @@ Response: Response required within business hours. Monitoring continues.
 **SEV-4 (Low)**: Minor issues with minimal user impact. Informational.
 
 Examples:
+
 - A single failed login attempt by one user
 - A single retry before successful processing
 - Performance slightly above baseline but within SLA
@@ -7426,12 +7421,13 @@ A runbook is a documented procedure for responding to a specific type of inciden
 
 **Runbook: Elevated Transfer Failure Rate (SEV-2)**
 
-*Symptoms*: `fintech_transfers_failed_total` is increasing faster than normal. The System Overview dashboard shows transfer error rate above 5%.
+_Symptoms_: `fintech_transfers_failed_total` is increasing faster than normal. The System Overview dashboard shows transfer error rate above 5%.
 
 **Step 1: Determine the failure scope.**
 Is this affecting all transfers or a subset? Check the Transfer Service logs filtered by `level: error`. Are failures concentrated on a specific `failureCode`?
 
 Common failure codes and their implications:
+
 - `INSUFFICIENT_FUNDS` — user error, expected. Check if the rate is genuinely elevated (possible fraud pattern) or normal.
 - `ACCOUNT_FROZEN` — possible admin action. Check Operations logs for recent account freezes.
 - `LEDGER_SERVICE_UNAVAILABLE` — dependency outage. Check Ledger Service health.
@@ -7450,6 +7446,7 @@ Check the Operations DLQ dashboard. Are messages accumulating in any Transfer Se
 Query the Ledger Service reconciliation endpoint: is the suspense account balance elevated? Each stranded saga has funds sitting in the suspense account. If the suspense balance is non-zero and not explained by normal in-flight transfers, there may be stuck sagas.
 
 **Step 6: Recovery actions.**
+
 - If a downstream service is down: wait for it to recover. The saga recovery mechanism will automatically resume stuck sagas.
 - If the downstream service has recovered but sagas are still stuck: manually trigger the saga recovery job via the Operations Service.
 - If there are stuck sagas after the dependency recovers: inspect each stuck transfer and manually advance or reverse them via the Operations Service admin endpoints.
@@ -7504,6 +7501,7 @@ POST /api/v1/ops/emergency-halt
 ```
 
 When a halt is activated:
+
 - A flag is set in Redis: `fintech:emergency_halt:<scope> = true`
 - Every service that processes financial operations checks this flag before proceeding
 - New operations are rejected with `503 Service Unavailable` and a message indicating planned maintenance
@@ -7642,23 +7640,23 @@ metadata:
   labels:
     app: transfer-service
     tier: application
-    version: "1.0.0"
+    version: '1.0.0'
 spec:
-  replicas: 2                    # Run 2 instances for availability
+  replicas: 2 # Run 2 instances for availability
   selector:
     matchLabels:
-      app: transfer-service      # This Deployment manages pods with this label
+      app: transfer-service # This Deployment manages pods with this label
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0          # Never have fewer than desired replicas
-      maxSurge: 1                # Allow 1 extra pod during updates
+      maxUnavailable: 0 # Never have fewer than desired replicas
+      maxSurge: 1 # Allow 1 extra pod during updates
   template:
     metadata:
       labels:
         app: transfer-service
     spec:
-      serviceAccountName: transfer-service-sa  # Kubernetes RBAC for the pod
+      serviceAccountName: transfer-service-sa # Kubernetes RBAC for the pod
 
       # Terminate gracefully: stop accepting new requests, finish in-flight ones
       terminationGracePeriodSeconds: 60
@@ -7669,7 +7667,7 @@ spec:
           imagePullPolicy: Always
 
           ports:
-            - containerPort: 3005  # The port the service listens on
+            - containerPort: 3005 # The port the service listens on
 
           # Environment variables from ConfigMap (non-sensitive)
           envFrom:
@@ -7696,22 +7694,22 @@ spec:
 
           # Resource limits: prevents one service from consuming all cluster resources
           resources:
-            requests:             # Kubernetes uses these for scheduling decisions
-              cpu: "100m"         # 100 millicores = 0.1 CPU core
-              memory: "256Mi"     # 256 megabytes
-            limits:               # Pod is killed if it exceeds these
-              cpu: "500m"         # 0.5 CPU core maximum
-              memory: "512Mi"     # 512 megabytes maximum
+            requests: # Kubernetes uses these for scheduling decisions
+              cpu: '100m' # 100 millicores = 0.1 CPU core
+              memory: '256Mi' # 256 megabytes
+            limits: # Pod is killed if it exceeds these
+              cpu: '500m' # 0.5 CPU core maximum
+              memory: '512Mi' # 512 megabytes maximum
 
           # Liveness probe: is the process alive? If not, restart it.
           livenessProbe:
             httpGet:
               path: /health/live
               port: 3005
-            initialDelaySeconds: 10   # Wait before first check
-            periodSeconds: 10         # Check every 10 seconds
-            timeoutSeconds: 3         # Fail if no response within 3s
-            failureThreshold: 3       # Restart after 3 consecutive failures
+            initialDelaySeconds: 10 # Wait before first check
+            periodSeconds: 10 # Check every 10 seconds
+            timeoutSeconds: 3 # Fail if no response within 3s
+            failureThreshold: 3 # Restart after 3 consecutive failures
 
           # Readiness probe: is the service ready for traffic?
           # If not, remove it from load balancing (but don't restart).
@@ -7719,11 +7717,12 @@ spec:
             httpGet:
               path: /health/ready
               port: 3005
-            initialDelaySeconds: 15   # Give more time for DB connections
+            initialDelaySeconds: 15 # Give more time for DB connections
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
-            successThreshold: 1       # Mark ready after 1 success
+            successThreshold: 1 # Mark ready after 1 success
+
 
       # Pod disruption budget: during voluntary disruptions (cluster upgrades),
       # ensure at least 1 replica remains available
@@ -7742,12 +7741,12 @@ metadata:
   namespace: fintech-services
 spec:
   selector:
-    app: transfer-service        # Routes to pods with this label
+    app: transfer-service # Routes to pods with this label
   ports:
     - name: http
-      port: 80                   # The port other services use to call this one
-      targetPort: 3005           # The port the container listens on
-  type: ClusterIP                # Internal only — not accessible from outside cluster
+      port: 80 # The port other services use to call this one
+      targetPort: 3005 # The port the container listens on
+  type: ClusterIP # Internal only — not accessible from outside cluster
 ```
 
 With this Service, any pod in the cluster can reach the Transfer Service at `http://transfer-service.fintech-services.svc.cluster.local`. The full DNS name can be shortened to `http://transfer-service` from within the same namespace.
@@ -7765,8 +7764,8 @@ metadata:
   name: fintech-ingress
   namespace: fintech-services
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/rate-limit: '100'
     # TLS termination happens here — downstream uses HTTP
 spec:
   tls:
@@ -7801,18 +7800,18 @@ metadata:
   name: transfer-service-config
   namespace: fintech-services
 data:
-  NODE_ENV: "production"
-  PORT: "3005"
-  LOG_LEVEL: "info"
-  SERVICE_NAME: "transfer-service"
-  SERVICE_VERSION: "1.0.0"
-  ACCOUNT_SERVICE_URL: "http://account-service.fintech-services.svc.cluster.local"
-  LEDGER_SERVICE_URL: "http://ledger-service.fintech-services.svc.cluster.local"
-  USER_SERVICE_URL: "http://user-service.fintech-services.svc.cluster.local"
-  APPROVAL_SERVICE_URL: "http://approval-service.fintech-services.svc.cluster.local"
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger.fintech-observability:4318"
-  APPROVAL_THRESHOLD_PAISE: "10000000"
-  MAX_DAILY_TRANSFER_LIMIT_PAISE: "100000000"
+  NODE_ENV: 'production'
+  PORT: '3005'
+  LOG_LEVEL: 'info'
+  SERVICE_NAME: 'transfer-service'
+  SERVICE_VERSION: '1.0.0'
+  ACCOUNT_SERVICE_URL: 'http://account-service.fintech-services.svc.cluster.local'
+  LEDGER_SERVICE_URL: 'http://ledger-service.fintech-services.svc.cluster.local'
+  USER_SERVICE_URL: 'http://user-service.fintech-services.svc.cluster.local'
+  APPROVAL_SERVICE_URL: 'http://approval-service.fintech-services.svc.cluster.local'
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://jaeger.fintech-observability:4318'
+  APPROVAL_THRESHOLD_PAISE: '10000000'
+  MAX_DAILY_TRANSFER_LIMIT_PAISE: '100000000'
 ```
 
 **Secret** for sensitive data (values are base64-encoded in the YAML, decrypted by Kubernetes before mounting):
@@ -7851,34 +7850,36 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: transfer-service
-  minReplicas: 2                 # Never scale below 2 (high availability)
-  maxReplicas: 10                # Never scale above 10 (cost control)
+  minReplicas: 2 # Never scale below 2 (high availability)
+  maxReplicas: 10 # Never scale above 10 (cost control)
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 70  # Scale up when average CPU > 70%
+          averageUtilization: 70 # Scale up when average CPU > 70%
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: 60   # Wait 60s before scaling up again
+      stabilizationWindowSeconds: 60 # Wait 60s before scaling up again
       policies:
         - type: Pods
-          value: 2                     # Add at most 2 pods per scale-up event
+          value: 2 # Add at most 2 pods per scale-up event
           periodSeconds: 60
     scaleDown:
-      stabilizationWindowSeconds: 300  # Wait 5 minutes before scaling down
+      stabilizationWindowSeconds: 300 # Wait 5 minutes before scaling down
       # Slow scale-down prevents thrashing
 ```
 
 Services with scale targets:
+
 - `api-gateway`: 2–20 replicas (highest traffic)
 - `ledger-service`: 2–8 replicas (high read load)
 - `transfer-service`: 2–10 replicas
 - `notification-service`: 2–8 replicas (bursty load)
 
 Services without HPA (stable, low traffic):
+
 - `auth-service`, `user-service`, `account-service`: fixed 2 replicas
 - `scheduler-service`: fixed **1 replica** (it uses distributed locking, but
   running multiple instances requires careful design; start with 1)
@@ -7985,11 +7986,13 @@ spec:
 ```
 
 To deploy to local (using a local Kubernetes cluster like k3d or minikube):
+
 ```
 kubectl apply -k k8s/overlays/local/
 ```
 
 To deploy to production:
+
 ```
 kubectl apply -k k8s/overlays/production/
 ```
@@ -8148,6 +8151,7 @@ Unit tests answer: "Given this input, does this function produce the correct out
 ### 13.4 What to Unit Test — And What Not To
 
 **Test:**
+
 - Business logic and domain rules in the `services/` layer
 - Calculation functions (balance calculations, limit checks, amount conversions)
 - State machine transition validation (is this saga status transition valid?)
@@ -8158,6 +8162,7 @@ Unit tests answer: "Given this input, does this function produce the correct out
 - Utility functions (paise-to-rupee conversion, cursor encoding/decoding)
 
 **Do not unit test:**
+
 - Database queries in repositories (these need a real database — integration tests)
 - HTTP routing (Express middleware chains — integration tests)
 - RabbitMQ consumption (needs a real broker — integration tests)
@@ -8169,6 +8174,7 @@ Unit tests answer: "Given this input, does this function produce the correct out
 This system uses **Vitest** — a Vite-native testing framework that is API-compatible with Jest but significantly faster. In a monorepo with many services, test speed compounds — Vitest's faster startup time across dozens of test files saves meaningful developer time.
 
 Vitest provides:
+
 - `describe` and `it` / `test` for test organisation
 - `expect` for assertions
 - `vi.fn()` for creating mock functions
@@ -8186,16 +8192,15 @@ Every unit test follows the same three-part structure. This pattern, called **AA
 
 describe('TransferService', () => {
   describe('validateTransferRequest', () => {
-
     it('should throw InsufficientFundsError when source balance is below transfer amount', async () => {
       // ARRANGE: Set up the test data and mock dependencies
       const mockLedgerClient = {
         getBalance: vi.fn().mockResolvedValue({
           accountId: 'acc-source',
-          balance: 30000,      // ₹300 in paise
+          balance: 30000, // ₹300 in paise
           currency: 'INR',
-          calculatedAt: new Date().toISOString()
-        })
+          calculatedAt: new Date().toISOString(),
+        }),
       };
 
       const transferService = new TransferService({
@@ -8206,8 +8211,8 @@ describe('TransferService', () => {
       const transferRequest = {
         sourceAccountId: 'acc-source',
         destinationAccountId: 'acc-dest',
-        amount: 50000,           // ₹500 — more than the ₹300 balance
-        currency: 'INR' as const
+        amount: 50000, // ₹500 — more than the ₹300 balance
+        currency: 'INR' as const,
       };
 
       // ACT: Call the function being tested
@@ -8219,7 +8224,7 @@ describe('TransferService', () => {
         errorCode: 'INSUFFICIENT_FUNDS',
         accountId: 'acc-source',
         availableBalance: 30000,
-        requiredAmount: 50000
+        requiredAmount: 50000,
       });
     });
 
@@ -8229,8 +8234,8 @@ describe('TransferService', () => {
         validateAccounts: vi.fn().mockResolvedValue({
           valid: false,
           reason: 'ACCOUNT_FROZEN',
-          frozenAccountId: 'acc-source'
-        })
+          frozenAccountId: 'acc-source',
+        }),
       };
       // ... rest of the test
     });
@@ -8238,7 +8243,6 @@ describe('TransferService', () => {
     it('should pass validation when all conditions are met', async () => {
       // Test the happy path too — not just error paths
     });
-
   });
 });
 ```
@@ -8251,73 +8255,79 @@ The Transfer Service's saga is the most complex business logic in the system. Un
 // Conceptual structure — illustrative only
 
 describe('SagaService', () => {
-
   describe('executeTransferSaga', () => {
-
     it('transitions to FUNDS_RESERVED after Phase 1 ledger entry succeeds', async () => {
       const mocks = createSagaMocks({
         ledgerClient: {
-          postTransaction: vi.fn()
+          postTransaction: vi
+            .fn()
             .mockResolvedValueOnce({ transactionId: 'txn-phase1' }) // Phase 1 succeeds
-            .mockResolvedValueOnce({ transactionId: 'txn-phase2' }) // Phase 2 succeeds
-        }
+            .mockResolvedValueOnce({ transactionId: 'txn-phase2' }), // Phase 2 succeeds
+        },
       });
 
       const result = await sagaService.executeTransferSaga(validTransfer, mocks);
 
       expect(result.status).toBe('completed');
-      expect(mocks.transferRepository.updateStatus)
-        .toHaveBeenCalledWith(validTransfer.id, 'funds_reserved');
-      expect(mocks.transferRepository.updateStatus)
-        .toHaveBeenCalledWith(validTransfer.id, 'completed');
+      expect(mocks.transferRepository.updateStatus).toHaveBeenCalledWith(
+        validTransfer.id,
+        'funds_reserved',
+      );
+      expect(mocks.transferRepository.updateStatus).toHaveBeenCalledWith(
+        validTransfer.id,
+        'completed',
+      );
     });
 
     it('initiates compensation when Phase 2 fails after Phase 1 succeeds', async () => {
       const mocks = createSagaMocks({
         ledgerClient: {
-          postTransaction: vi.fn()
-            .mockResolvedValueOnce({ transactionId: 'txn-phase1' })  // Phase 1 succeeds
+          postTransaction: vi
+            .fn()
+            .mockResolvedValueOnce({ transactionId: 'txn-phase1' }) // Phase 1 succeeds
             .mockRejectedValueOnce(new ServiceUnavailableError('Ledger Service')) // Phase 2 fails
-            .mockResolvedValueOnce({ transactionId: 'txn-reversal' }) // Compensation succeeds
-        }
+            .mockResolvedValueOnce({ transactionId: 'txn-reversal' }), // Compensation succeeds
+        },
       });
 
       const result = await sagaService.executeTransferSaga(validTransfer, mocks);
 
       expect(result.status).toBe('reversed');
       // Verify compensation was called with the correct reversal entries
-      expect(mocks.ledgerClient.postTransaction)
-        .toHaveBeenNthCalledWith(3, expect.objectContaining({
+      expect(mocks.ledgerClient.postTransaction).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
           referenceType: 'reversal',
           entries: expect.arrayContaining([
             expect.objectContaining({
               accountId: validTransfer.sourceAccountId,
-              entryType: 'debit'
-            })
-          ])
-        }));
+              entryType: 'debit',
+            }),
+          ]),
+        }),
+      );
     });
 
     it('sets status to REVERSAL_FAILED when both Phase 2 and compensation fail', async () => {
       const mocks = createSagaMocks({
         ledgerClient: {
-          postTransaction: vi.fn()
+          postTransaction: vi
+            .fn()
             .mockResolvedValueOnce({ transactionId: 'txn-phase1' })
-            .mockRejectedValue(new ServiceUnavailableError('Ledger Service'))
-            // All subsequent calls fail — Phase 2 retries + compensation
-        }
+            .mockRejectedValue(new ServiceUnavailableError('Ledger Service')),
+          // All subsequent calls fail — Phase 2 retries + compensation
+        },
       });
 
       const result = await sagaService.executeTransferSaga(validTransfer, mocks);
 
       expect(result.status).toBe('reversal_failed');
       // Verify critical alert metric was emitted
-      expect(mocks.metrics.incrementCounter)
-        .toHaveBeenCalledWith('fintech_transfers_reversal_failed_total');
+      expect(mocks.metrics.incrementCounter).toHaveBeenCalledWith(
+        'fintech_transfers_reversal_failed_total',
+      );
     });
-
   });
-
 });
 ```
 
@@ -8329,73 +8339,70 @@ The Ledger Service's core logic — enforcing accounting invariants — must be 
 // Conceptual structure — illustrative only
 
 describe('LedgerService', () => {
-
   describe('validateTransaction', () => {
-
     it('rejects a transaction where debits do not equal credits', () => {
       const transaction = {
         entries: [
           { accountId: 'acc-a', entryType: 'debit' as const, amount: 50000 },
-          { accountId: 'acc-b', entryType: 'credit' as const, amount: 40000 }
+          { accountId: 'acc-b', entryType: 'credit' as const, amount: 40000 },
           // 50000 debits vs 40000 credits — does not balance
-        ]
+        ],
       };
 
-      expect(() => ledgerService.validateTransaction(transaction))
-        .toThrow(expect.objectContaining({
-          errorCode: 'ENTRIES_DO_NOT_BALANCE'
-        }));
+      expect(() => ledgerService.validateTransaction(transaction)).toThrow(
+        expect.objectContaining({
+          errorCode: 'ENTRIES_DO_NOT_BALANCE',
+        }),
+      );
     });
 
     it('rejects a transaction with a single entry', () => {
       const transaction = {
-        entries: [
-          { accountId: 'acc-a', entryType: 'debit' as const, amount: 50000 }
-        ]
+        entries: [{ accountId: 'acc-a', entryType: 'debit' as const, amount: 50000 }],
       };
 
-      expect(() => ledgerService.validateTransaction(transaction))
-        .toThrow(expect.objectContaining({
-          errorCode: 'MINIMUM_TWO_ENTRIES_REQUIRED'
-        }));
+      expect(() => ledgerService.validateTransaction(transaction)).toThrow(
+        expect.objectContaining({
+          errorCode: 'MINIMUM_TWO_ENTRIES_REQUIRED',
+        }),
+      );
     });
 
     it('rejects a transaction with a zero amount entry', () => {
       const transaction = {
         entries: [
           { accountId: 'acc-a', entryType: 'debit' as const, amount: 0 },
-          { accountId: 'acc-b', entryType: 'credit' as const, amount: 0 }
-        ]
+          { accountId: 'acc-b', entryType: 'credit' as const, amount: 0 },
+        ],
       };
 
-      expect(() => ledgerService.validateTransaction(transaction))
-        .toThrow(expect.objectContaining({ errorCode: 'INVALID_AMOUNT' }));
+      expect(() => ledgerService.validateTransaction(transaction)).toThrow(
+        expect.objectContaining({ errorCode: 'INVALID_AMOUNT' }),
+      );
     });
 
     it('accepts a valid balanced transaction', () => {
       const transaction = {
         entries: [
           { accountId: 'acc-a', entryType: 'debit' as const, amount: 50000 },
-          { accountId: 'acc-b', entryType: 'credit' as const, amount: 50000 }
-        ]
+          { accountId: 'acc-b', entryType: 'credit' as const, amount: 50000 },
+        ],
       };
 
       expect(() => ledgerService.validateTransaction(transaction)).not.toThrow();
     });
-
   });
 
   describe('calculateBalance', () => {
-
     it('returns zero for an account with no entries', () => {
       expect(ledgerService.calculateBalance([], null)).toBe(0);
     });
 
     it('correctly sums debits and credits from entries', () => {
       const entries = [
-        { entryType: 'debit' as const, amount: 100000 },   // +100000
-        { entryType: 'debit' as const, amount: 50000 },    // +50000
-        { entryType: 'credit' as const, amount: 30000 },   // -30000
+        { entryType: 'debit' as const, amount: 100000 }, // +100000
+        { entryType: 'debit' as const, amount: 50000 }, // +50000
+        { entryType: 'credit' as const, amount: 30000 }, // -30000
       ];
       // Expected: 100000 + 50000 - 30000 = 120000
       expect(ledgerService.calculateBalance(entries, null)).toBe(120000);
@@ -8404,17 +8411,13 @@ describe('LedgerService', () => {
     it('uses snapshot as base and only sums entries after snapshot date', () => {
       const snapshot = { balance: 500000, snapshotAt: new Date('2024-03-01') };
       const entries = [
-        { entryType: 'debit' as const, amount: 50000,
-          createdAt: new Date('2024-03-02') },  // after snapshot — included
-        { entryType: 'credit' as const, amount: 20000,
-          createdAt: new Date('2024-02-28') },  // before snapshot — excluded
+        { entryType: 'debit' as const, amount: 50000, createdAt: new Date('2024-03-02') }, // after snapshot — included
+        { entryType: 'credit' as const, amount: 20000, createdAt: new Date('2024-02-28') }, // before snapshot — excluded
       ];
       // Expected: 500000 (snapshot) + 50000 (debit after snapshot) = 550000
       expect(ledgerService.calculateBalance(entries, snapshot)).toBe(550000);
     });
-
   });
-
 });
 ```
 
@@ -8430,15 +8433,13 @@ Creating test data by hand in every test leads to verbose, fragile tests. A smal
 
 import { Transfer, TransferStatus } from '@fintech/shared-types';
 
-export function createTransferFixture(
-  overrides: Partial<Transfer> = {}
-): Transfer {
+export function createTransferFixture(overrides: Partial<Transfer> = {}): Transfer {
   return {
     id: 'xfer-test-' + Math.random().toString(36).slice(2),
     idempotencyKey: 'idem-test-' + Math.random().toString(36).slice(2),
     sourceAccountId: 'acc-source-default',
     destinationAccountId: 'acc-dest-default',
-    amount: 50000,                // ₹500
+    amount: 50000, // ₹500
     currency: 'INR',
     description: 'Test transfer',
     status: 'pending' as TransferStatus,
@@ -8453,14 +8454,14 @@ export function createTransferFixture(
     updatedAt: new Date(),
     completedAt: null,
     failedAt: null,
-    ...overrides      // caller overrides only the fields they care about
+    ...overrides, // caller overrides only the fields they care about
   };
 }
 
 // Usage in a test:
 const frozenAccountTransfer = createTransferFixture({
   sourceAccountId: 'acc-frozen',
-  amount: 100000
+  amount: 100000,
 });
 // All other fields have sensible defaults — the test only declares what matters
 ```
@@ -8492,7 +8493,6 @@ The recommended approach for this system: use **database transactions for isolat
 // Conceptual structure — illustrative only
 
 describe('Transfer Service API — POST /transfers', () => {
-
   let app: Express.Application;
   let db: DatabaseClient;
   let testTransaction: DatabaseTransaction;
@@ -8526,11 +8526,11 @@ describe('Transfer Service API — POST /transfers', () => {
     await seedTestAccount(testTransaction, {
       id: 'acc-source',
       ownerId: 'usr-alice',
-      status: 'active'
+      status: 'active',
     });
     await seedTestAccount(testTransaction, {
       id: 'acc-dest',
-      status: 'active'
+      status: 'active',
     });
     await seedLedgerBalance(testTransaction, 'acc-source', 500000); // ₹5000
 
@@ -8540,9 +8540,7 @@ describe('Transfer Service API — POST /transfers', () => {
       .query(true)
       .reply(200, { valid: true, sourceOwnerKycStatus: 'verified' });
 
-    nock('http://ledger-service')
-      .post('/transactions')
-      .reply(201, { transactionId: 'txn-phase1' });
+    nock('http://ledger-service').post('/transactions').reply(201, { transactionId: 'txn-phase1' });
 
     // ACT: Make the HTTP request
     const response = await request(app)
@@ -8555,20 +8553,20 @@ describe('Transfer Service API — POST /transfers', () => {
         sourceAccountId: 'acc-source',
         destinationAccountId: 'acc-dest',
         amount: 50000,
-        currency: 'INR'
+        currency: 'INR',
       });
 
     // ASSERT: Verify the response
     expect(response.status).toBe(202);
     expect(response.body).toMatchObject({
       transferId: expect.any(String),
-      status: expect.stringMatching(/^(pending|completed)$/)
+      status: expect.stringMatching(/^(pending|completed)$/),
     });
 
     // Verify the transfer was persisted in the database
     const savedTransfer = await testTransaction.query(
       'SELECT * FROM transfers WHERE idempotency_key = $1',
-      ['idem-test-abc']
+      ['idem-test-abc'],
     );
     expect(savedTransfer).toHaveLength(1);
     expect(savedTransfer[0].amount).toBe(50000);
@@ -8578,7 +8576,7 @@ describe('Transfer Service API — POST /transfers', () => {
     // Seed the existing transfer record
     await seedTransfer(testTransaction, {
       idempotencyKey: 'idem-duplicate',
-      status: 'completed'
+      status: 'completed',
     });
 
     const response = await request(app)
@@ -8600,7 +8598,6 @@ describe('Transfer Service API — POST /transfers', () => {
     expect(response.status).toBe(422);
     expect(response.body.error).toBe('VALIDATION_ERROR');
   });
-
 });
 ```
 
@@ -8612,7 +8609,6 @@ Integration tests must verify that the service publishes the correct events to R
 // Conceptual structure — illustrative only
 
 describe('Transfer Service — Event Publishing', () => {
-
   let testConsumer: TestMessageConsumer;
 
   beforeAll(async () => {
@@ -8627,26 +8623,19 @@ describe('Transfer Service — Event Publishing', () => {
 
   it('publishes transfer.completed event when saga succeeds', async () => {
     // Trigger a successful transfer through the API
-    await request(app)
-      .post('/transfers')
-      .set(testAuthHeaders)
-      .send(validTransferBody);
+    await request(app).post('/transfers').set(testAuthHeaders).send(validTransferBody);
 
     // Wait for the event to be published (with timeout)
-    const event = await testConsumer.waitForMessage(
-      'transfer.completed',
-      { timeoutMs: 5000 }
-    );
+    const event = await testConsumer.waitForMessage('transfer.completed', { timeoutMs: 5000 });
 
     expect(event).toBeDefined();
     expect(event.payload).toMatchObject({
       sourceAccountId: validTransferBody.sourceAccountId,
       amount: validTransferBody.amount,
-      currency: 'INR'
+      currency: 'INR',
     });
     expect(event.correlationId).toBeDefined();
   });
-
 });
 ```
 
@@ -8658,14 +8647,13 @@ The Ledger Service's integration tests must verify the double-entry constraints 
 // Conceptual structure — illustrative only
 
 describe('Ledger Service — Accounting Invariants', () => {
-
   it('rejects a transaction that would make an asset account balance negative', async () => {
     // ARRANGE: Account with balance of ₹300 (30000 paise)
     await postTransaction({
       entries: [
         { accountId: 'acc-alice', entryType: 'debit', amount: 30000 },
-        { accountId: 'SYS_SUSPENSE_TRANSFER', entryType: 'credit', amount: 30000 }
-      ]
+        { accountId: 'SYS_SUSPENSE_TRANSFER', entryType: 'credit', amount: 30000 },
+      ],
     });
 
     // ACT: Try to debit ₹400 (more than the ₹300 balance)
@@ -8676,8 +8664,8 @@ describe('Ledger Service — Accounting Invariants', () => {
       .send({
         entries: [
           { accountId: 'SYS_SUSPENSE_TRANSFER', entryType: 'debit', amount: 40000 },
-          { accountId: 'acc-alice', entryType: 'credit', amount: 40000 }
-        ]
+          { accountId: 'acc-alice', entryType: 'credit', amount: 40000 },
+        ],
       });
 
     // ASSERT
@@ -8704,7 +8692,7 @@ describe('Ledger Service — Accounting Invariants', () => {
     await postTransaction({ idempotencyKey, ...validTransaction });
     const secondResponse = await postTransaction({
       idempotencyKey,
-      ...validTransaction
+      ...validTransaction,
     });
 
     expect(secondResponse.status).toBe(409);
@@ -8715,11 +8703,10 @@ describe('Ledger Service — Accounting Invariants', () => {
       `SELECT le.* FROM ledger_entries le
        JOIN ledger_transactions lt ON le.transaction_id = lt.id
        WHERE lt.idempotency_key = $1`,
-      [idempotencyKey]
+      [idempotencyKey],
     );
     expect(entries).toHaveLength(2); // Only the original two entries
   });
-
 });
 ```
 
@@ -8751,10 +8738,9 @@ For this system, the most critical contracts to test are:
 // Conceptual structure — illustrative only
 
 describe('Transfer Service — Contract with Ledger Service', () => {
-
   const provider = new PactProvider({
     consumer: 'transfer-service',
-    provider: 'ledger-service'
+    provider: 'ledger-service',
   });
 
   beforeAll(() => provider.setup());
@@ -8770,22 +8756,25 @@ describe('Transfer Service — Contract with Ledger Service', () => {
         path: '/transactions',
         headers: { 'X-Internal-API-Key': 'test-key' },
         body: {
-          referenceId: like('transfer-id'),     // any string
+          referenceId: like('transfer-id'), // any string
           referenceType: 'transfer',
-          entries: eachLike({
-            accountId: like('account-id'),
-            entryType: term({ generate: 'debit', matcher: 'debit|credit' }),
-            amount: like(50000)
-          }, { min: 2 })
-        }
+          entries: eachLike(
+            {
+              accountId: like('account-id'),
+              entryType: term({ generate: 'debit', matcher: 'debit|credit' }),
+              amount: like(50000),
+            },
+            { min: 2 },
+          ),
+        },
       },
       willRespondWith: {
         status: 201,
         body: {
           transactionId: like('transaction-id'),
-          postedAt: like('2024-03-15T14:23:11.234Z')
-        }
-      }
+          postedAt: like('2024-03-15T14:23:11.234Z'),
+        },
+      },
     });
 
     // Run the consumer code against the mock provider
@@ -8794,7 +8783,6 @@ describe('Transfer Service — Contract with Ledger Service', () => {
 
     expect(result.transactionId).toBeDefined();
   });
-
 });
 ```
 
@@ -8811,6 +8799,7 @@ End-to-end (E2E) tests run against the complete system — all services running,
 For this system, E2E tests use **Playwright** (for browser-based user journeys) and **Supertest against the API Gateway** (for API-level E2E tests without a browser).
 
 E2E tests are expensive to write and maintain. Focus them on:
+
 - The most critical happy paths (a user registering, creating an account, and completing a transfer)
 - The most critical failure paths (a transfer failing due to insufficient funds and the user's balance being unchanged)
 - Security boundaries (a user trying to access another user's account)
@@ -8911,11 +8900,7 @@ const testHelpers = {
     // Create account, admin-credit it, return { accountId }
   },
 
-  waitForTransferCompletion: async (
-    transferId: string,
-    accessToken: string,
-    timeoutMs = 30000
-  ) => {
+  waitForTransferCompletion: async (transferId: string, accessToken: string, timeoutMs = 30000) => {
     // Poll GET /transfers/:id until status is terminal
     // Return the final transfer record
   },
@@ -8928,7 +8913,7 @@ const testHelpers = {
   assertLedgerBalanced: async (adminToken: string) => {
     // GET /ledger/reconciliation/summary
     // Assert difference === 0
-  }
+  },
 };
 ```
 
@@ -8960,22 +8945,22 @@ Simulates expected daily traffic. Ramp up to the expected normal load, sustain f
 
 export const options = {
   stages: [
-    { duration: '2m', target: 50 },   // Ramp up to 50 virtual users over 2 minutes
-    { duration: '10m', target: 50 },  // Hold at 50 VUs for 10 minutes
-    { duration: '2m', target: 0 },    // Ramp down
+    { duration: '2m', target: 50 }, // Ramp up to 50 virtual users over 2 minutes
+    { duration: '10m', target: 50 }, // Hold at 50 VUs for 10 minutes
+    { duration: '2m', target: 0 }, // Ramp down
   ],
   thresholds: {
     // Define pass/fail criteria
-    http_req_duration: ['p(95)<500'],   // 95% of requests under 500ms
-    http_req_failed: ['rate<0.01'],     // Less than 1% error rate
-  }
+    http_req_duration: ['p(95)<500'], // 95% of requests under 500ms
+    http_req_failed: ['rate<0.01'], // Less than 1% error rate
+  },
 };
 
-export default function() {
+export default function () {
   // Each virtual user executes this function repeatedly
   const loginResponse = http.post(`${BASE_URL}/api/v1/auth/login`, {
-    email: `user_${__VU}@test.com`,  // VU = virtual user number
-    password: 'TestPassword123!'
+    email: `user_${__VU}@test.com`, // VU = virtual user number
+    password: 'TestPassword123!',
   });
   check(loginResponse, { 'login succeeded': (r) => r.status === 200 });
 
@@ -8983,11 +8968,11 @@ export default function() {
 
   const balanceResponse = http.get(
     `${BASE_URL}/api/v1/ledger/accounts/${accountIds[__VU]}/balance`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}` } },
   );
   check(balanceResponse, { 'balance retrieved': (r) => r.status === 200 });
 
-  sleep(1);   // 1 second think time between requests
+  sleep(1); // 1 second think time between requests
 }
 ```
 
@@ -9000,14 +8985,14 @@ The transfer saga is the most resource-intensive operation. Test it specifically
 
 export const options = {
   stages: [
-    { duration: '1m', target: 10 },   // Ramp up to 10 concurrent transfers
-    { duration: '5m', target: 10 },   // Sustain
+    { duration: '1m', target: 10 }, // Ramp up to 10 concurrent transfers
+    { duration: '5m', target: 10 }, // Sustain
     { duration: '1m', target: 0 },
   ],
   thresholds: {
-    'http_req_duration{name:transfer}': ['p(99)<3000'],  // Transfers under 3s at P99
-    'http_req_failed{name:transfer}': ['rate<0.001'],    // Less than 0.1% failure
-  }
+    'http_req_duration{name:transfer}': ['p(99)<3000'], // Transfers under 3s at P99
+    'http_req_failed{name:transfer}': ['rate<0.001'], // Less than 0.1% failure
+  },
 };
 ```
 
@@ -9018,12 +9003,12 @@ Tests the system's behaviour under a sudden, unexpected traffic spike.
 ```javascript
 export const options = {
   stages: [
-    { duration: '30s', target: 10 },   // Normal load
-    { duration: '10s', target: 200 },  // Sudden 20x spike
-    { duration: '3m', target: 200 },   // Sustain spike
-    { duration: '30s', target: 10 },   // Return to normal
+    { duration: '30s', target: 10 }, // Normal load
+    { duration: '10s', target: 200 }, // Sudden 20x spike
+    { duration: '3m', target: 200 }, // Sustain spike
+    { duration: '30s', target: 10 }, // Return to normal
     { duration: '1m', target: 0 },
-  ]
+  ],
 };
 ```
 
@@ -9034,11 +9019,11 @@ Runs at moderate load for an extended period (2+ hours) to detect memory leaks a
 ```javascript
 export const options = {
   stages: [
-    { duration: '2h', target: 25 },  // Sustained moderate load for 2 hours
+    { duration: '2h', target: 25 }, // Sustained moderate load for 2 hours
   ],
   thresholds: {
-    http_req_duration: ['p(95)<1000'],  // Slightly relaxed threshold for endurance
-  }
+    http_req_duration: ['p(95)<1000'], // Slightly relaxed threshold for endurance
+  },
 };
 ```
 
@@ -9047,17 +9032,20 @@ export const options = {
 After a load test, examine:
 
 **From k6 output:**
+
 - Median, P95, P99 request duration per endpoint
 - Error rate per endpoint
 - Throughput (requests per second)
 
 **From Grafana:**
+
 - CPU and memory usage of each service during the test
 - Database connection pool utilisation (did it become saturated?)
 - RabbitMQ queue depths (did queues back up under load?)
 - HPA scaling events (did autoscaling kick in, and was it fast enough?)
 
 **Key findings to look for:**
+
 - If P99 latency grows linearly with load: expected, tune the threshold
 - If P99 latency spikes at a specific request rate: you have found a bottleneck
 - If error rate jumps suddenly at a specific load: you have found a breaking point
@@ -9094,6 +9082,7 @@ Publish a deliberately malformed message to a consumer queue. Verify that it eve
 Chaos tests are scripted operations that can be run against a staging environment. They are not automated in the same way as unit or integration tests — they require observation and manual verification of system behaviour.
 
 The tools:
+
 - **kubectl** to kill specific pods or disconnect services from the network
 - **toxiproxy** to inject network latency, packet loss, or connection termination between services
 - Custom scripts to publish duplicate or malformed messages to RabbitMQ
@@ -9114,6 +9103,7 @@ Structure your testing work to grow alongside your service implementation:
 
 **Milestone: Service complete**
 Before moving on from any service, it must have:
+
 - Unit tests covering all business logic paths (happy and error)
 - Integration tests covering all HTTP endpoints
 - Integration tests verifying database constraints
@@ -9121,16 +9111,19 @@ Before moving on from any service, it must have:
 
 **Milestone: Service pair complete**
 When two services need to communicate (e.g. Transfer Service + Ledger Service):
+
 - Contract tests for their API interaction
 - Integration tests for the end-to-end flow through both services
 
 **Milestone: Core financial flow complete**
 When Register → Create Account → Deposit → Transfer is implemented:
+
 - E2E tests for the complete happy path
 - E2E tests for all critical failure scenarios
 - Ledger reconciliation verification in all E2E tests
 
 **Milestone: Full system complete**
+
 - Load tests at expected normal load
 - Load tests at 3x expected load (headroom)
 - Spike tests
@@ -9196,6 +9189,7 @@ Establish the complete project structure, developer tooling, and local infrastru
 Create the complete directory layout from Chapter 2. Every folder exists, even if empty. The project structure communicates the full system design from day one.
 
 **Root tooling:**
+
 - `pnpm-workspace.yaml` declaring all workspace packages
 - Root `package.json` with workspace scripts (`dev`, `build`, `test`, `lint`, `typecheck`, `infra:up`, `infra:down`)
 - `tsconfig.base.json` with strict TypeScript settings
@@ -9205,6 +9199,7 @@ Create the complete directory layout from Chapter 2. Every folder exists, even i
 
 **Shared packages (scaffolded, not fully implemented):**
 Create the `package.json` and `tsconfig.json` for every shared package:
+
 - `@fintech/shared-types` — empty `src/index.ts`
 - `@fintech/shared-errors` — empty `src/index.ts`
 - `@fintech/shared-events` — empty `src/index.ts`
@@ -9214,6 +9209,7 @@ Create the `package.json` and `tsconfig.json` for every shared package:
 - `@fintech/shared-config` — empty `src/index.ts`
 
 **Local infrastructure (`docker-compose.yml`):**
+
 - PostgreSQL 16 with health check
 - Redis 7 with health check
 - RabbitMQ 3.13 with management UI, health check, and the `definitions.json` topology file
@@ -9222,6 +9218,7 @@ Create the `package.json` and `tsconfig.json` for every shared package:
 - Jaeger with OTLP HTTP collector
 
 **Infrastructure verification scripts (`scripts/dev/`):**
+
 - `verify-infra.sh` — connects to each infrastructure component and confirms it is healthy
 - `create-databases.sh` — creates all ten PostgreSQL databases (one per service)
 
@@ -9299,6 +9296,7 @@ The `correlationId` middleware. The `requestLogger` middleware (Pino-based struc
 ### Testing Requirements
 
 Each shared package has unit tests covering its core logic:
+
 - `shared-errors`: every error class has correct `statusCode` and `errorCode`
 - `shared-events`: `EventTypes` constants match routing key strings
 - `shared-config`: `loadConfig` exits with helpful message when required vars are missing
@@ -9329,6 +9327,7 @@ Users can register and log in. The two-token system is working. Every subsequent
 ### What You Build
 
 **Auth Service (complete):**
+
 - All four database tables with migrations (`users`, `sessions`, `email_verification_tokens`, `password_reset_tokens`)
 - Registration endpoint with bcrypt password hashing and email verification token generation
 - Login endpoint with JWT access token issuance and refresh token cookie
@@ -9343,6 +9342,7 @@ Users can register and log in. The two-token system is working. Every subsequent
 - OpenTelemetry instrumentation
 
 **API Gateway (complete):**
+
 - Routing table for all planned service endpoints (returns `503` for services not yet built)
 - JWT validation middleware using Auth Service's public key
 - Correlation ID middleware
@@ -9365,12 +9365,14 @@ Users can register and log in. The two-token system is working. Every subsequent
 ### Testing Requirements
 
 **Auth Service unit tests:**
+
 - Password hashing and comparison
 - JWT payload construction and validation
 - Refresh token rotation logic
 - Token blocklist check logic
 
 **Auth Service integration tests:**
+
 - `POST /register` creates a user and publishes `user.registered` event
 - `POST /login` returns access token and sets refresh cookie
 - `POST /login` with wrong password returns 401
@@ -9381,6 +9383,7 @@ Users can register and log in. The two-token system is working. Every subsequent
 - Rate limiting: 6th login attempt within 15 minutes returns 429
 
 **API Gateway integration tests:**
+
 - Request without JWT to protected route returns 401
 - Request with expired JWT returns 401
 - Request with valid JWT passes through to downstream service
@@ -9412,6 +9415,7 @@ User profiles exist and are kept in sync with authentication events. The KYC sta
 ### What You Build
 
 **User Service (complete):**
+
 - Migrations: `user_profiles`, `user_preferences`, `kyc_submissions`
 - Consumer for `user.registered` → creates profile record
 - Consumer for `user.email_verified` → logs event
@@ -9465,6 +9469,7 @@ Users can create financial accounts. Account status management is working. The a
 ### What You Build
 
 **Account Service (complete):**
+
 - Migrations: `accounts`, `account_status_history`, `account_limits`
 - `POST /accounts` — create account (requires verified KYC via User Service call)
 - `GET /accounts` — list own accounts
@@ -9519,6 +9524,7 @@ The financial core of the system is working. Transactions can be posted with ful
 ### What You Build
 
 **Ledger Service (complete):**
+
 - Migrations: `ledger_accounts`, `ledger_transactions`, `ledger_entries`, `balance_snapshots`
 - Migration: system accounts inserted (`SYS_SUSPENSE_TRANSFER`, `SYS_SUSPENSE_DEPOSIT`, `SYS_EXTERNAL_INFLOW`, `SYS_REVENUE_FEES`, `SYS_ADMIN_CREDIT_FACILITY`)
 - Migration: revoke UPDATE and DELETE on `ledger_entries` for application database user
@@ -9545,12 +9551,14 @@ Create the first Grafana dashboard showing reconciliation status and ledger tran
 ### Testing Requirements
 
 **Unit tests:**
+
 - Balance calculation: various debit/credit combinations
 - Balance calculation with snapshot: only entries after snapshot are summed
 - Transaction validation: entries must balance, amount must be positive
 - Transaction validation: minimum two entries required
 
 **Integration tests:**
+
 - Valid balanced transaction is accepted and stored
 - Unbalanced transaction is rejected (422)
 - Transaction that would make balance negative is rejected (422)
@@ -9584,6 +9592,7 @@ Money can enter the system. Admin credits work. The complete flow from "no balan
 ### What You Build
 
 **Deposit Service (complete):**
+
 - Migrations: `deposits`
 - `POST /deposits` — initiate a deposit (simulated payment gateway)
 - `POST /deposits/callback` — payment gateway callback (simulated)
@@ -9610,6 +9619,7 @@ For the first time, the complete "user exists → account exists → has money" 
 ### Testing Requirements
 
 **Integration tests:**
+
 - Admin credit: balance increases by credited amount
 - Admin credit: `deposit.admin_credit_applied` event published with admin user ID
 - Admin credit: mandatory reason field enforced
@@ -9618,6 +9628,7 @@ For the first time, the complete "user exists → account exists → has money" 
 - Payment callback with wrong amount is rejected
 
 **E2E test (first E2E test in the project):**
+
 ```
 Register user → verify email → login →
 create account → admin credit ₹5000 →
@@ -9648,6 +9659,7 @@ Money can move between accounts. The complete Saga — Phase 1, Phase 2, and com
 ### What You Build
 
 **Transfer Service (complete):**
+
 - Migrations: `transfers`, `transfer_saga_events`, `daily_transfer_totals`
 - `POST /transfers` — initiate transfer (with idempotency key)
 - `GET /transfers` — transfer history (own, or all for admin)
@@ -9675,12 +9687,14 @@ The critical financial E2E tests covering happy path and failure scenarios.
 ### Testing Requirements
 
 **Unit tests:**
+
 - Saga state machine: all valid and invalid transitions
 - Compensation entry construction: reversal entries are exact inverse of Phase 1 entries
 - Daily limit check logic
 - Transfer validation rules (amount positive, accounts different, etc.)
 
 **Integration tests:**
+
 - Successful transfer: Phase 1 and Phase 2 ledger transactions exist
 - Successful transfer: source balance decreased, destination balance increased
 - Failed transfer (insufficient funds): no ledger entries created
@@ -9691,6 +9705,7 @@ The critical financial E2E tests covering happy path and failure scenarios.
 - Daily limit: transfer that would exceed daily limit is rejected
 
 **E2E tests:**
+
 - Complete transfer happy path (from Milestone 8 E2E design in Chapter 13)
 - Insufficient funds E2E test
 - Post-transfer reconciliation assertion
@@ -9720,6 +9735,7 @@ Users are informed of financial events. Every significant action is recorded in 
 ### What You Build
 
 **Notification Service (complete):**
+
 - Migrations: `notifications`, `notification_templates`, `user_notification_cache`
 - Consumers for all events that trigger notifications (from the channel matrix in Chapter 8)
 - Consumer for `user.registered` and `user.profile_updated` → update local cache
@@ -9730,6 +9746,7 @@ Users are informed of financial events. Every significant action is recorded in 
 - Events: `notification.sent`, `notification.failed`
 
 **Audit Service (complete):**
+
 - Migration: `audit_logs`, `audit_log_access`
 - Wildcard consumer binding (`#` on all exchanges) → write audit records
 - `GET /audit/logs` — paginated audit log search
@@ -9751,12 +9768,14 @@ Dashboard showing notification delivery rates and audit log volume.
 ### Testing Requirements
 
 **Notification Service:**
+
 - `transfer.completed` event → notification record created for both account owners
 - Duplicate event (same `event_id`) → only one notification created (idempotency)
 - User with `email_enabled: false` → email notification skipped
 - Failed email delivery → notification status `failed`, retry attempted
 
 **Audit Service:**
+
 - Every event consumed → audit log record created
 - Duplicate event → only one audit record (idempotency via `event_id` unique constraint)
 - `GET /audit/logs/correlation/:id` → returns all audit events for that request
@@ -9785,6 +9804,7 @@ Large transfers require human approval. Scheduled transfers execute at the right
 ### What You Build
 
 **Approval Service (complete):**
+
 - Migration: `approval_requests`
 - Integration with Transfer Service saga (Transfer Service creates approvals, resumes on decision)
 - `POST /approvals` — internal endpoint for Transfer Service
@@ -9794,6 +9814,7 @@ Large transfers require human approval. Scheduled transfers execute at the right
 - Events: all approval events
 
 **Scheduler Service (complete):**
+
 - Migration: `scheduled_tasks`
 - The 30-second scheduling loop with Redis distributed locking
 - All system maintenance task types
@@ -9804,6 +9825,7 @@ Large transfers require human approval. Scheduled transfers execute at the right
 - Task: `approval_expiry_check` → publishes event consumed by Approval Service
 
 **Transfer Service enhancement:**
+
 - Consume `approval.approved` and `approval.rejected` events to resume or fail sagas
 - Handle `schedule.transfer_due` event to process scheduled transfers
 
@@ -9852,6 +9874,7 @@ Administrators have a complete set of tools for managing the platform. The syste
 ### What You Build
 
 **Operations Service (complete):**
+
 - Admin credit endpoint (delegates to Deposit Service)
 - User role management: `PATCH /ops/users/:id/role`
 - KYC approval and rejection: `POST /ops/users/:id/kyc/approve`
@@ -9907,6 +9930,7 @@ Auditors and managers have access to financial reports. The system's financial h
 ### What You Build
 
 **Reporting Service (complete):**
+
 - Consumes `transfer.completed`, `deposit.completed`, `ledger.transaction.posted` events
 - Maintains local aggregated reporting tables (daily transaction summaries, account statistics)
 - `GET /reports/transactions` — filtered transaction report for auditors
@@ -9953,6 +9977,7 @@ The system is fully observable. Every alert is configured. Runbooks are written.
 Every metric from the catalog in Chapter 10 is emitted by every service. Verify this by querying Prometheus for each metric name.
 
 **Complete Grafana dashboards:**
+
 - System Overview Dashboard (all services, Four Golden Signals)
 - Financial Operations Dashboard (transfer metrics, reconciliation)
 - Service Deep-Dive Dashboard (per-service detailed metrics)
@@ -9963,6 +9988,7 @@ All alert definitions from Chapter 10 configured in Prometheus. Alertmanager con
 
 **Runbooks:**
 Write the complete runbooks for:
+
 - Elevated transfer failure rate
 - Ledger reconciliation failure
 - DLQ accumulation
@@ -10053,6 +10079,7 @@ All four load test scenarios from Chapter 13: sustained normal load, transfer-sp
 
 **Chaos test execution:**
 Execute and document the results of all critical chaos scenarios from Chapter 13:
+
 - Service crash during saga execution (funds_reserved state)
 - Database connectivity loss during transfer
 - RabbitMQ disconnection and reconnection
@@ -10063,6 +10090,7 @@ Execute and document the results of all critical chaos scenarios from Chapter 13
 Whatever the load tests reveal — balance snapshot tuning, database query optimisation, connection pool sizing, HPA threshold adjustment.
 
 **Security hardening:**
+
 - Verify that no service database is accessible from outside its own service
 - Verify internal API keys are different per service
 - Verify audit logs cannot be tampered with
@@ -10215,16 +10243,16 @@ Step 6.5: Fraud Check
     POST /fraud/evaluate
     Body: { transferId, sourceAccountId, destinationAccountId,
             amount, initiatedBy, deviceFingerprint, ipAddress }
-  
+
   Response cases:
     { decision: 'allow' }
       → Continue to Phase 1 normally
-    
+
     { decision: 'review', fraudScore: 0.73, reasons: [...] }
       → Create an approval request (like large transfer approval)
         but with fraud_review as the request type
       → Pause saga in PENDING_FRAUD_REVIEW status
-    
+
     { decision: 'block', fraudScore: 0.95, reasons: [...] }
       → Fail the transfer immediately
       → Publish transfer.blocked_by_fraud event
@@ -10269,19 +10297,23 @@ The fraud scoring model begins as a rules engine (if velocity > X and amount > Y
 Even though the Fraud Detection Service is not built in the initial project, the following must be designed now:
 
 **In the Transfer Service:**
+
 - Add `PENDING_FRAUD_REVIEW` to the `TransferStatus` type in `@fintech/shared-types`
 - Add the fraud check step to the saga executor as a no-op that calls a configurable URL (or skips if `FRAUD_SERVICE_URL` is not set in the environment)
 - Add `fraud_review_id` nullable column to the `transfers` table
 - Reserve the routing key `transfer.blocked_by_fraud` in `@fintech/shared-events`
 
 **In the Approval Service:**
+
 - Add `fraud_review` to the `request_type` enum
 - Add `fraud_score` and `fraud_reasons` columns to `approval_requests`
 
 **In the API Gateway:**
+
 - Reserve the `/api/v1/fraud/*` route prefix in the routing table
 
 **In the Event Catalog:**
+
 - Document `fraud.evaluation_completed`, `fraud.alert_raised`, and `fraud.account_flagged` payload schemas
 
 This means adding the Fraud Detection Service later requires no breaking changes to existing services — only the addition of the new service and the activation of the previously no-op fraud check step in the Transfer Service.
@@ -10320,6 +10352,7 @@ Response: { locked: true, lockedUntil: string }
 
 **Transfer Service Enhancement:**
 For cross-currency transfers, the Transfer Service:
+
 1. Gets a rate quote from the Currency Service
 2. Locks the rate (valid for 30 seconds)
 3. Adds an additional saga step: currency conversion
@@ -10329,11 +10362,13 @@ For cross-currency transfers, the Transfer Service:
 
 **Ledger Service Enhancement:**
 The most significant change. The `ledger_accounts` table already has a `currency` column. The `ledger_entries` table has a `currency` column. These were designed in Chapter 6 specifically for this future requirement. The enhancement needed:
+
 - Support for posting transactions where entries have different currencies
 - A new system account: `SYS_FX_GAIN_LOSS` (for rounding differences in exchange)
 - Currency-aware balance calculation
 
 **New Ledger Entry for a Cross-Currency Transfer (INR → USD):**
+
 ```
 Transaction: "Cross-currency transfer — INR to USD"
 
@@ -10352,17 +10387,21 @@ The accounting still balances in the system's base currency (INR) once FX adjust
 #### Extension Points to Design Now
 
 **In `@fintech/shared-types`:**
+
 - `AccountCurrency` type is already `'INR'` — change it to `string` now, with a comment: "Currently INR only. Will expand when Currency Service is added."
 - `LedgerEntry.currency` column already exists — no schema change needed
 
 **In the Ledger Service:**
+
 - Keep the `currency` column on `ledger_entries` populated correctly from day one
 - Do not hardcode `'INR'` anywhere in balance calculation logic — parameterise it
 
 **In the Event Catalog:**
+
 - Reserve `currency.rate_updated`, `currency.rate_locked`, `currency.conversion_completed`
 
 **In the API Gateway:**
+
 - Reserve `/api/v1/currency/*` route prefix
 
 ---
@@ -10378,6 +10417,7 @@ A closed-loop payment system — where users can only transact with other users 
 The External Bank Integration Service is an **adapter** — it translates between the platform's internal event-driven model and the external banking system's protocols (which are typically synchronous, document-based, and operate on batch processing cycles with delays of minutes to hours).
 
 **Outbound Flow (platform user → external bank account):**
+
 ```
 User initiates transfer to external account
   → Transfer Service identifies destination as external (by account number format)
@@ -10390,6 +10430,7 @@ User initiates transfer to external account
 ```
 
 **Inbound Flow (external bank → platform user):**
+
 ```
 Banking network sends callback to External Bank Service
   → External Bank Service validates the callback
@@ -10416,19 +10457,23 @@ Table: external_accounts
 #### Extension Points to Design Now
 
 **In the Transfer Service:**
+
 - The `destination_account_id` field currently assumes an internal account ID
 - Add `destination_type ENUM('internal', 'external')` to the `transfers` table
 - Add `external_account_id UUID` nullable column
 - The saga executor already has the extensibility to add new steps — no structural change needed
 
 **In the Deposit Service:**
+
 - The `payment_method` column already has an extensible CHECK constraint — add `'external_bank_neft'`, `'external_bank_imps'`, `'upi'` as future values
 
 **In `@fintech/shared-events`:**
+
 - Reserve: `external_transfer.requested`, `external_transfer.completed`, `external_transfer.failed`
 - Reserve: `upi.payment_received`, `bank.transfer_received`
 
 **In the API Gateway:**
+
 - Reserve `/api/v1/external-accounts/*` route prefix
 
 ---
@@ -10444,6 +10489,7 @@ Lending is one of the most profitable financial services. A platform with a user
 The Loan Service has a richer integration with the existing system than any other future service, because lending inherently involves multiple phases over extended time periods.
 
 **Loan Disbursement (lending money to a user):**
+
 ```
 Approved loan of ₹50,000 to Alice:
 
@@ -10455,6 +10501,7 @@ The SYS_LOAN_DISBURSEMENT account's balance tracks total outstanding loans.
 ```
 
 **Loan Repayment (user repaying the loan):**
+
 ```
 Alice makes a ₹5,000 repayment:
 
@@ -10467,11 +10514,12 @@ The interest goes to revenue. The principal reduces the outstanding loan.
 ```
 
 **Loan Default:**
+
 ```
 If Alice defaults:
   DEBIT  SYS_LOAN_LOSS_PROVISION       amount
   CREDIT SYS_LOAN_DISBURSEMENT         amount
-  
+
 This writes off the loan from the active loan balance to the loss provision account.
 ```
 
@@ -10487,16 +10535,20 @@ Loan performance metrics (NPL ratio, outstanding loan book, interest income) are
 #### Extension Points to Design Now
 
 **In `@fintech/shared-types`:**
+
 - Add `LedgerReferenceType` values: `'loan_disbursement'`, `'loan_repayment'`, `'loan_writeoff'`
 
 **In the Ledger Service:**
+
 - The `reference_type` column's CHECK constraint needs these new values added when the Loan Service is introduced
 - System accounts `SYS_LOAN_DISBURSEMENT`, `SYS_LOAN_REVENUE_INTEREST`, `SYS_LOAN_LOSS_PROVISION` will be added via a new migration
 
 **In the Scheduler Service:**
+
 - The `task_type` column needs `'loan_emi_payment'` added when the Loan Service is introduced
 
 **In `@fintech/shared-events`:**
+
 - Reserve: `loan.application_submitted`, `loan.approved`, `loan.rejected`, `loan.disbursed`, `loan.repayment_received`, `loan.overdue`, `loan.defaulted`, `loan.closed`
 
 ---
@@ -10512,6 +10564,7 @@ A payment card (virtual or physical) tied to the user's platform wallet dramatic
 Card transactions have a unique property: they are **authorised first** (merchant checks if funds are available) and **settled later** (actual transfer happens hours or days later). This two-phase nature maps naturally to the platform's double-entry system but requires new concepts.
 
 **Card Authorisation (funds reserved but not yet transferred):**
+
 ```
 User taps card for ₹500 at a coffee shop:
 
@@ -10524,6 +10577,7 @@ authorisation account pending settlement.
 ```
 
 **Card Settlement (actual transfer to merchant):**
+
 ```
 When the merchant's bank settles (same day or next day):
 
@@ -10536,6 +10590,7 @@ from which it will be paid out to the merchant's bank.
 ```
 
 **Card Authorisation Reversal (if merchant cancels):**
+
 ```
 If the coffee shop cancels the transaction:
 
@@ -10558,15 +10613,19 @@ If an authorisation is never settled (the merchant's terminal sent an authorisat
 #### Extension Points to Design Now
 
 **In `@fintech/shared-types`:**
+
 - Add `LedgerReferenceType` values: `'card_authorisation'`, `'card_settlement'`, `'card_reversal'`
 
 **In `@fintech/shared-events`:**
+
 - Reserve: `card.issued`, `card.transaction_authorised`, `card.transaction_settled`, `card.transaction_reversed`, `card.blocked`, `card.expired`
 
 **In the Scheduler Service:**
+
 - Reserve task type: `'card_authorisation_expiry'`
 
 **In the Notification Service:**
+
 - The notification template system already supports new event types — no structural change needed
 - Add channel matrix entries for card events with high-priority SMS and push notification
 
@@ -10584,21 +10643,25 @@ The Extension Point Registry is a document in `docs/architecture/extension-point
 # Extension Point Registry
 
 ## Fraud Detection Service
+
 Status: NOT YET BUILT
 Integration points:
+
 - transfers table: fraud_review_id UUID (nullable) — column added in migration 010
 - TransferStatus: 'pending_fraud_review' — added to shared-types
 - approval_requests.request_type: 'fraud_review' — CHECK constraint updated
-- Route prefix reserved: /api/v1/fraud/*
+- Route prefix reserved: /api/v1/fraud/\*
 - Events reserved: fraud.evaluation_completed, fraud.alert_raised
 - Environment variable: FRAUD_SERVICE_URL (optional — service skips check if absent)
 
 ## Currency Service
+
 Status: NOT YET BUILT
 Integration points:
+
 - ledger_entries.currency: already present and populated correctly
 - AccountCurrency type: uses string not literal type
-- Route prefix reserved: /api/v1/currency/*
+- Route prefix reserved: /api/v1/currency/\*
 - Events reserved: currency.rate_updated, currency.rate_locked
 
 [... one entry per future service ...]
@@ -10837,8 +10900,8 @@ The complete list of ADRs that should exist in `docs/architecture/adr/` upon pro
 
 ---
 
-*This concludes The Fintech Platform Architecture Handbook.*
+_This concludes The Fintech Platform Architecture Handbook._
 
-*Fifteen chapters. Thirteen services. Ten databases. One financial system built correctly from first principles.*
+_Fifteen chapters. Thirteen services. Ten databases. One financial system built correctly from first principles._
 
-*Now build it.*
+_Now build it._
