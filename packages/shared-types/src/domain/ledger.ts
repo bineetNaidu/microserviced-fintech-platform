@@ -1,19 +1,20 @@
-import { ULID } from './types';
+import type { ULID, Paise, CurrencyType } from './types';
 
 export type EntryDirection = 'CREDIT' | 'DEBIT';
 
 export interface LedgerTransaction {
-  id: ULID; // ULID
-  referenceId: string; // ULID linking back to the Transfer Saga
-  purpose: 'USER_TRANSFER' | 'DEPOSIT' | 'FEE' | 'REVERSAL'; // e.g., 'P2P_TRANSFER', 'DEPOSIT'
+  id: ULID;
+  referenceId: ULID; // Forces structural reference link
+  purpose: 'USER_TRANSFER' | 'DEPOSIT' | 'FEE' | 'REVERSAL';
+  currency: CurrencyType; // Validates matching currency parameters cross-ledger
   timestamp: Date;
 }
 
 export interface LedgerEntry {
-  id: ULID; // ULID
-  transactionId: ULID; // ULID
-  accountId: ULID; // ULID
-  amountPaise: number; // Strict Integer representation
+  id: ULID;
+  transactionId: ULID;
+  accountId: ULID;
+  amountPaise: Paise;
   direction: EntryDirection;
   createdAt: Date;
 }

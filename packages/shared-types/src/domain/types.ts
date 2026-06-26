@@ -8,3 +8,11 @@ export type Paise = number;
  * Standardized ULID String
  */
 export type ULID = string;
+
+export const SupportedCurrency = {
+  INR: 'INR',
+  USD: 'USD',
+  EUR: 'EUR',
+} as const;
+
+export type CurrencyType = (typeof SupportedCurrency)[keyof typeof SupportedCurrency];

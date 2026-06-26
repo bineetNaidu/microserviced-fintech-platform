@@ -1,4 +1,4 @@
-import type { Paise, ULID } from './types';
+import type { ULID, Paise, CurrencyType } from './types';
 
 export type TransferStatus =
   | 'PENDING'
@@ -10,11 +10,12 @@ export type TransferStatus =
   | 'REVERSED';
 
 export interface Transfer {
-  id: ULID; // ULID
-  idempotencyKey: ULID | string; // Unique UUID/String from client
-  fromAccountId: ULID; // ULID
-  toAccountId: ULID; // ULID
+  id: ULID;
+  idempotencyKey: string;
+  fromAccountId: ULID;
+  toAccountId: ULID;
   amountPaise: Paise;
+  currency: CurrencyType;
   status: TransferStatus;
   failureReason?: string;
   createdAt: Date;
