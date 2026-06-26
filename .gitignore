@@ -1,0 +1,35 @@
+# Dependency directories
+node_modules/
+dist/
+build/
+.npm/
+
+# Local Environment Secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Next.js build outputs
+.next/
+out/
+
+# IDE and System Files
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Docker logs and data volumes
+postgres_data/
+*.log
+
+# Debugging dumps
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
