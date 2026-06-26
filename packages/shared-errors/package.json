@@ -1,0 +1,17 @@
+{
+  "name": "@fintech/shared-errors",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fintech/shared-types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
