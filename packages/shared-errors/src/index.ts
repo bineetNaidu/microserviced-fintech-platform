@@ -1,3 +1,8 @@
+/**
+ * @fintech/shared-errors
+ * Global Core Workspace Exceptions Layer.
+ */
+
 export * from './base.error';
 export * from './domain/bad-request.error';
 export * from './domain/not-found.error';

@@ -29,11 +29,11 @@ When requests break parameters (e.g., Zod schema failures), it is not enough to 
 
 ```text
 BaseAppError (Abstract Master Parent Class)
- ├── BadRequestError ---------> [HTTP 400] Validation and parameters fail
- ├── UnauthorizedError -------> [HTTP 401] Invalid JWTs, sessions, or signatures
- ├── ForbiddenError ----------> [HTTP 403] Valid identity, but frozen or lacks RBAC roles
- ├── NotFoundError -----------> [HTTP 404] Resource entity missing in Postgres database
- └── ConflictError -----------> [HTTP 409] Idempotency key state reuse collisions
+ ├── BadRequestError ---------> [HTTP 400] Validation and parameters fail (Defaults to VALIDATION_FAILED)
+ ├── UnauthorizedError -------> [HTTP 401] Authentication credentials are missing or invalid
+ ├── ForbiddenError ----------> [HTTP 403] Access privilege validation failed
+ ├── NotFoundError -----------> [HTTP 404] Requested resource could not be found
+ └── ConflictError -----------> [HTTP 409] Resource state collision or idempotency key mismatch
 
 ```
 
@@ -71,15 +71,11 @@ export async function processLedgerDebit(accountId: string) {
   const account = await db.accounts.findById(accountId);
 
   if (!account) {
-    throw new NotFoundError(
-      `Account identity key '${accountId}' is not registered on the platform.`,
-    );
+    throw new NotFoundError('Requested resource could not be found');
   }
 
   if (account.status === 'FROZEN') {
-    throw new ForbiddenError(
-      'Action rejected. This financial account has been frozen due to compliance hold.',
-    );
+    throw new ForbiddenError('Access privilege validation failed');
   }
 }
 ```
@@ -154,3 +150,14 @@ export class InsufficientFundsError extends BaseAppError {
 ```
 
 Remember to add your new class file to `src/domain/` and export it explicitly inside your master barrel `src/index.ts`.
+
+---
+
+### 🏁 Workspace Build Check
+
+Let's trigger the build pipeline one final time to verify that everything builds cleanly without any issues:
+
+```bash
+npm run build --workspace=@fintech/shared-errors
+
+```
