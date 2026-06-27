@@ -16,7 +16,7 @@ export interface ApprovalRequest {
   id: ULID;
 
   /** Distributed correlation identifier tracking the action across administrative boundaries */
-  correlationId: string;
+  correlationId: UUID;
 
   /** The unique administrative User ID who initiated the operation (The Maker) */
   makerId: UUID;
@@ -60,5 +60,5 @@ export interface ApprovalReview {
   justificationReason: string;
 
   /** Chronological marker tracking when the decision was finalized */
-  reviewed_at: Date;
+  reviewedAt: Date;
 }
