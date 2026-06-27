@@ -16,7 +16,13 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@fintech/shared-types": ["./packages/shared-types/dist/index.d.ts"],
+      "@fintech/shared-errors": ["./packages/shared-errors/dist/index.d.ts"],
+      "@fintech/shared-config": ["./packages/shared-config/dist/index.d.ts"],
+      "@fintech/shared-events": ["./packages/shared-events/dist/index.d.ts"]
+    }
   },
   "exclude": ["node_modules", "dist", ".next"]
 }
