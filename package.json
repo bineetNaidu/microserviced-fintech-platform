@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspaces --if-present",
-    "build:packages": "npm run build --workspace=@fintech/shared-types && npm run build --workspace=@fintech/shared-errors && npm run build --workspace=@fintech/shared-config && npm run build --workspace=@fintech/shared-events",
+    "build:packages": "npm run build --workspace=@fintech/shared-types && npm run build --workspace=@fintech/shared-errors && npm run build --workspace=@fintech/shared-config && npm run build --workspace=@fintech/shared-events && npm run build --workspace=@fintech/shared-middleware",
     "build:services": "npm run build --workspace=services/* --if-present",
     "build:apps": "npm run build --workspace=apps/* --if-present",
     "build": "npm run build:packages && npm run build:services && npm run build:apps",
