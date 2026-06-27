@@ -30,6 +30,20 @@ This package establishes a **Hybrid Routing Contract**:
 
 ---
 
+## 📁 Hierarchy Map
+
+```text
+src/
+├── index.ts           # Master export barrel mapping pipeline
+├── routes.ts          # Centralized ApiRoutes tree (7 major domains)
+└── env/
+    ├── base.ts        # Common schemas (NODE_ENV, PORT, LOG_LEVEL)
+    └── loader.ts      # Fail-fast validation core engine logic
+
+```
+
+---
+
 ## 💻 Concrete Usage Guide
 
 ### 1. Bootstrapping Environment Variables inside a Microservice
@@ -83,9 +97,10 @@ Utilize the centralized contract system on your client components to make type-s
 import { ApiRoutes } from '@fintech/shared-config';
 
 export async function submitUserTransfer(
-  fromAccount: string,
-  toAccount: string,
+  fromAccountId: string,
+  toAccountId: string,
   amountPaise: number,
+  currency: 'INR' | 'USD' | 'EUR',
 ) {
   // Construct destination dynamically without manually managing raw strings
   const gatewayUrl = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
@@ -94,7 +109,7 @@ export async function submitUserTransfer(
   const response = await fetch(finalEndpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fromAccount, toAccount, amountPaise }),
+    body: JSON.stringify({ fromAccountId, toAccountId, amountPaise, currency }),
   });
 
   return response.json();
@@ -114,9 +129,12 @@ When introducing a new API path sequence (e.g., introducing a `v2` endpoint sequ
 
 ```typescript
 export const ApiRoutes = {
+  // ... current configurations
   Accounts: {
     v1: {
-      /* ... */
+      Create: '/v1/create',
+      GetDetails: '/v1/:accountId',
+      Freeze: '/v1/:accountId/freeze',
     },
     v2: {
       GetEnhancedProfile: '/v2/profiles/:accountId',
@@ -125,4 +143,24 @@ export const ApiRoutes = {
 } as const;
 ```
 
-Run npm run build --workspace=@fintech/shared-config from the repository root to propagate declarations cleanly across the dependency graphs.
+3. Regenerate declarations across your repository graph from the project root directory:
+
+```bash
+# Clean historical builds and run compilation script
+npm run build --workspace=@fintech/shared-config
+
+# Validate declaration output profiles
+npm run typecheck --workspace=@fintech/shared-config
+
+```
+
+---
+
+### 🏁 Shared Config Package Rebuild Complete
+
+Let's execute a final compilation test to verify that your type maps and documentation match up perfectly:
+
+```bash
+npm run build --workspace=@fintech/shared-config
+
+```
