@@ -1,4 +1,7 @@
-// Define the exact literal strings allowed as Error Codes
+/**
+ * Global Machine-Readable System Error Codes.
+ * Unified lookup dictionary utilized across all 13 services to trigger explicit, predictable frontend behaviors.
+ */
 export const ErrorCode = {
   INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
   ACCOUNT_FROZEN: 'ACCOUNT_FROZEN',
@@ -11,17 +14,33 @@ export const ErrorCode = {
   INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
 } as const;
 
-// Extracts the union type: 'INSUFFICIENT_FUNDS' | 'ACCOUNT_FROZEN' | ...
+/** Extracts the strict string literal union type from the global ErrorCode configuration map */
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 
+/**
+ * Detailed error context payload block, utilized primarily to break down structural request validation problems.
+ */
 export interface ApiErrorDetail {
-  field?: string; // E.g., 'amount'
-  message: string; // E.g., 'Amount must be greater than zero'
+  /** The explicit property path violating schema constraints (e.g., 'amountPaise') */
+  field?: string;
+
+  /** Human-readable explanation of why the specific parameter failed validation rules */
+  message: string;
 }
 
+/**
+ * Unified error data packet embedded directly into the global ApiErrorResponse structure.
+ */
 export interface StandardErrorPayload {
-  code: ErrorCodeType; // Strictly typed!
+  /** Strictly typed machine-readable identification token used for client-side routing and localization */
+  code: ErrorCodeType;
+
+  /** Descriptive top-level summary message detailing the transaction or application exception */
   message: string;
+
+  /** Optional collection of targeted array objects detailing sub-field schema violations */
   details?: ApiErrorDetail[];
-  traceId?: string; // For OpenTelemetry cross-service tracing
+
+  /** Distributed correlation identifier tracking string pulled directly from OpenTelemetry headers */
+  traceId?: string;
 }
