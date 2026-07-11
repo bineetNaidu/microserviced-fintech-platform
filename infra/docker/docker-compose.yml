@@ -1,0 +1,161 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Local Development Infrastructure Stack
+#
+# Starts PostgreSQL, Redis, and RabbitMQ for local development.
+# Mirrors the same service names and ports used in the K8s manifests (k8s/base/)
+# so your service config (DATABASE_URL, REDIS_URL, etc.) doesn't change between
+# local and cluster environments — only the hostname changes (localhost → service name).
+#
+# ─── USAGE ────────────────────────────────────────────────────────────────────
+# 1. Copy .env.example to .env and fill in credentials
+# 2. docker compose up -d        (start in background)
+# 3. docker compose logs -f      (tail logs)
+# 4. docker compose down         (stop without removing data volumes)
+# 5. docker compose down -v      (stop AND destroy all data — clean slate)
+#
+# ─── WHY ALPINE IMAGES? ───────────────────────────────────────────────────────
+# Alpine Linux images are stripped-down Linux distributions (~5MB base) vs
+# the full Debian images (~80-200MB). Smaller images mean:
+#   - Faster docker pull times in CI and on new dev machines
+#   - Smaller attack surface (fewer installed packages = fewer CVEs)
+#   - Less disk usage across your team's machines
+# All official Alpine variants used here are the same underlying software —
+# just on a lighter base OS.
+#
+# ─── ARCHITECTURE NOTES ───────────────────────────────────────────────────────
+# In Kubernetes (k8s/base/), these same services become Deployments + Services.
+# The "fintech-network" bridge here maps to a K8s namespace-level network policy.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ─── PostgreSQL 16 (Alpine) ─────────────────────────────────────────────────
+  # Each microservice gets its own isolated database within this single Postgres
+  # instance (database-per-service pattern — ADR-002). In production, each service
+  # would connect to its own dedicated Postgres cluster or RDS instance for
+  # true isolation and independent scaling. For local dev, one instance is fine.
+  postgres:
+    image: postgres:16-alpine
+    container_name: fintech-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fintech_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fintech_pass}
+      # Note: Each service creates its own database. The init script below
+      # creates the auth_db database on first startup.
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    ports:
+      # Host port 5432 → container port 5432
+      # In K8s, this port is only accessible within the cluster (no NodePort/LoadBalancer)
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      # Named volume persists data across container restarts.
+      # Run `docker compose down -v` to wipe the database on a clean slate.
+      - postgres_data:/var/lib/postgresql/data
+      # Init scripts run ONCE on first startup (when the data volume is empty).
+      # Creates all service databases so we don't need separate init steps.
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      # pg_isready exits 0 when Postgres is accepting connections.
+      # Other services use `depends_on: postgres: condition: service_healthy`
+      # to wait for Postgres before starting.
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-fintech_user} -d ${POSTGRES_DB:-postgres}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - fintech-network
+
+  # ─── Redis 7 (Alpine) ───────────────────────────────────────────────────────
+  # Shared Redis instance used for:
+  #   1. JWT blocklist — access token JTIs written on logout (ADR-007)
+  #   2. Rate limiting counters — atomic Lua scripts per IP/user (shared-middleware)
+  #   3. Emergency halt key — EMERGENCY_HALT=true stops all mutations (ADR-018)
+  #   4. Suspension keys — suspended:{userId} for fast-path gateway rejection
+  #
+  # In production, Redis would be a managed Redis Cluster (e.g., ElastiCache)
+  # or Redis Sentinel for HA. For local dev, a single instance is sufficient.
+  redis:
+    image: redis:7-alpine
+    container_name: fintech-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-redis_pass}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    # maxmemory-policy allkeys-lru: when Redis is full, evict the least recently
+    # used keys. Safe for our use case — expired blocklist entries will naturally
+    # be the LRU candidates. NEVER use noeviction for a blocklist (would cause OOM).
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-redis_pass}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - fintech-network
+
+  # ─── RabbitMQ 3.12 (Alpine Management) ─────────────────────────────────────
+  # AMQP message broker for all async event-driven communication (ADR-010).
+  # The `management` variant adds a web UI at http://localhost:15672 so you can
+  # inspect queues, exchanges, dead-letter queues, and message rates visually.
+  #
+  # Platform topology:
+  #   Exchange: fintech.events (topic) — all domain events published here
+  #   Exchange: fintech.dlx (direct)   — dead-letter exchange for failed messages
+  #   Queue: fintech.dead-letters      — catch-all for nack'd messages (inspect here!)
+  #
+  # Services create their own queues and bindings on startup via declareTopology().
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: fintech-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-fintech_user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-fintech_pass}
+      # Enable high-availability policy for queues in production (Quorum Queues).
+      # For local dev the default durable queues are sufficient.
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - '${RABBITMQ_PORT:-5672}:5672' # AMQP protocol port (services connect here)
+      - '${RABBITMQ_MGMT_PORT:-15672}:15672' # Management UI (browser: http://localhost:15672)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia
+    healthcheck:
+      # rabbitmq-diagnostics ping is the canonical health check for RabbitMQ 3.x
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - fintech-network
+
+# ─── Named Volumes ────────────────────────────────────────────────────────────
+# Named volumes persist data on the host's Docker volume store across container
+# restarts. Unlike bind mounts, Docker manages the location — you don't need to
+# worry about host filesystem paths or permissions.
+#
+# To list: docker volume ls
+# To wipe: docker compose down -v
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+# A dedicated bridge network isolates this stack from other Docker networks
+# on your machine. Containers communicate by service name (e.g., "postgres:5432")
+# within this network — the same DNS resolution pattern used in Kubernetes.
+networks:
+  fintech-network:
+    driver: bridge
