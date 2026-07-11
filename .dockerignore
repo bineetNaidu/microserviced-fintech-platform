@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+.npm
+npm-debug.log
+
+# Build outputs
+dist
+build
+.drizzle
+coverage
+
+# Environment & Credentials (CRITICAL)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.secrets
+
+# System files
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Git
+.git
+.gitignore
+.gitattributes
+README.md
