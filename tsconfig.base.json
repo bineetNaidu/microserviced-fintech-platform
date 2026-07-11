@@ -22,7 +22,9 @@
       "@fintech/shared-errors": ["./packages/shared-errors/dist/index.d.ts"],
       "@fintech/shared-config": ["./packages/shared-config/dist/index.d.ts"],
       "@fintech/shared-events": ["./packages/shared-events/dist/index.d.ts"],
-      "@fintech/shared-middleware": ["./packages/shared-middleware/dist/index.d.ts"]
+      "@fintech/shared-middleware": ["./packages/shared-middleware/dist/index.d.ts"],
+      "@fintech/shared-db": ["./packages/shared-db/dist/index.d.ts"],
+      "@fintech/shared-messaging": ["./packages/shared-messaging/dist/index.d.ts"]
     }
   },
   "exclude": ["node_modules", "dist", ".next"]
