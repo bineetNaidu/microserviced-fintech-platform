@@ -12,7 +12,7 @@ import { config } from '../../config';
 
 export function createAuthRouter(controller: AuthController): Router {
   const router = Router();
-  const authenticate = createAuthenticateMiddleware(config.JWT_SECRET);
+  const authenticate = createAuthenticateMiddleware(config.JWT_PUBLIC_KEY);
 
   // ─── PUBLIC ROUTES ─────────────────────────────────────────────────────────
 
