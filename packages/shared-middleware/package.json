@@ -14,6 +14,8 @@
     "@fintech/shared-errors": "*",
     "@fintech/shared-types": "*",
     "express": "^4.21.2",
+    "ioredis": "^5.11.1",
+    "jose": "^5.10.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
