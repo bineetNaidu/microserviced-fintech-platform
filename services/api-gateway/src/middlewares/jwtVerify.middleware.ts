@@ -96,7 +96,8 @@ export function createJwtVerifyMiddleware(jwtPublicKeyPem: string): RequestHandl
    * importSPKI() is a WebCrypto operation — doing it per-request would add
    * ~1-3ms of unnecessary overhead on every authenticated request.
    */
-  const publicKeyPromise: Promise<KeyLike> = importSPKI(jwtPublicKeyPem, 'RS256');
+  const cleanPublicKeyPem = jwtPublicKeyPem.replace(/\\n/g, '\n').replace(/\r/g, '').trim();
+  const publicKeyPromise: Promise<KeyLike> = importSPKI(cleanPublicKeyPem, 'RS256');
 
   return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     // ─── Step 1: Skip verification for public routes ──────────────────────
