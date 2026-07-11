@@ -17,6 +17,7 @@
     "@fintech/shared-middleware": "*",
     "@fintech/shared-types": "*",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^4.22.2",
     "http-proxy-middleware": "^4.2.0",
     "ioredis": "^5.11.1",
