@@ -81,12 +81,15 @@ export class TokenService {
    * This is an async factory step — jose's key import is async (WebCrypto API).
    */
   async initialize(): Promise<void> {
+    // Unescape literal \n character sequences to actual newlines for standard PEM parsing
+    const privateKeyPem = config.JWT_PRIVATE_KEY.replace(/\\n/g, '\n').replace(/\r/g, '').trim();
+    const publicKeyPem = config.JWT_PUBLIC_KEY.replace(/\\n/g, '\n').replace(/\r/g, '').trim();
+
     // importPKCS8 parses a PKCS#8 PEM-encoded private key for use with `jose`.
     // 'RS256' here tells jose which algorithm this key will be used with.
-    this.privateKey = await importPKCS8(config.JWT_PRIVATE_KEY, 'RS256');
-
+    this.privateKey = await importPKCS8(privateKeyPem, 'RS256');
     // importSPKI parses a SubjectPublicKeyInfo PEM-encoded public key.
-    this.publicKey = await importSPKI(config.JWT_PUBLIC_KEY, 'RS256');
+    this.publicKey = await importSPKI(publicKeyPem, 'RS256');
   }
 
   /**
