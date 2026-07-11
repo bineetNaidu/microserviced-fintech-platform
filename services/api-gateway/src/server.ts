@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import Redis from 'ioredis';
 import { config } from './config';
 import { createApp } from './app';

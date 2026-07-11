@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createPool, drainPool } from '@fintech/shared-db';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import Redis from 'ioredis';
