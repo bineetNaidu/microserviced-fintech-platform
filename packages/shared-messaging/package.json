@@ -1,0 +1,23 @@
+{
+  "name": "@fintech/shared-messaging",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fintech/shared-events": "*",
+    "@fintech/shared-types": "*",
+    "amqp-connection-manager": "^4.1.15",
+    "amqplib": "^0.10.9"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.8",
+    "@types/node": "^26.0.1",
+    "typescript": "^5.7.3"
+  }
+}
