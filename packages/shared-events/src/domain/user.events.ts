@@ -1,22 +1,36 @@
-import type { UUID } from '@fintech/shared-types';
+import type { UUID, KycStatus } from '@fintech/shared-types';
 import type { EventEnvelope } from '../envelope';
 
 export interface UserRegisteredEventData {
   userId: UUID;
   email: string;
   fullName: string;
-  phoneNumber: string;
-  timestamp: Date;
+  /**
+   * Phone number is optional at registration — users may add it later during KYC.
+   * If null, the notification service must skip SMS-based alerts for this user.
+   */
+  phoneNumber: string | null;
+  timestamp: string; // ISO 8601 — consistent with EventEnvelope.timestamp convention
 }
 
 export interface UserKycStatusChangedEventData {
   userId: UUID;
-  oldStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
-  newStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  /**
+   * Full KycStatus union imported from shared-types.
+   *
+   * FIXED: This previously used an inline union `'PENDING' | 'APPROVED' | 'REJECTED'`
+   * which was missing 'SUBMITTED' and 'SUSPENDED'. Those transitions would silently
+   * produce a TypeScript error in any consumer listening for those states.
+   * Now it correctly mirrors the complete KycStatus type.
+   */
+  oldStatus: KycStatus;
+  newStatus: KycStatus;
+  /** Compliance-required reason for the status change — required by regulators for audit */
   reason?: string;
-  verifiedBy?: UUID; // Admin checker UUID
+  /** The Admin UUID who performed the KYC verification. Null if system-automated. */
+  verifiedBy?: UUID;
 }
 
-// Envelopes
+// Strictly typed structural envelopes
 export type UserRegisteredEvent = EventEnvelope<UserRegisteredEventData>;
 export type UserKycStatusChangedEvent = EventEnvelope<UserKycStatusChangedEventData>;

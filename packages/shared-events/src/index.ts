@@ -1,4 +1,5 @@
 export * from './envelope';
+export * from './factory';
 export * from './domain/account.events';
 export * from './domain/transfer.events';
 export * from './domain/approval.events';

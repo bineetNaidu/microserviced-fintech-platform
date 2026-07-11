@@ -10,7 +10,8 @@
     "prebuild": "npm run clean"
   },
   "dependencies": {
-    "@fintech/shared-types": "*"
+    "@fintech/shared-types": "*",
+    "ulid": "^2.4.0"
   },
   "devDependencies": {
     "typescript": "^5.7.3"
