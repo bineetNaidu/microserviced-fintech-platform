@@ -5,14 +5,14 @@
  */
 export const ApiRoutes = {
   /** Base routing prefixes intercepted and evaluated at the API Gateway proxy edge layers */
-  Prefixes: {
-    Auth: '/auth',
-    Accounts: '/accounts',
-    Transfers: '/transfers',
-    Users: '/users',
-    Approvals: '/approvals',
-    Operations: '/operations',
-    Audit: '/audit',
+  ApiPrefixes: {
+    Auth: '/api/auth',
+    Accounts: '/api/accounts',
+    Transfers: '/api/transfers',
+    Users: '/api/users',
+    Approvals: '/api/approvals',
+    Operations: '/api/operations',
+    Audit: '/api/audit',
   },
 
   /** Route endpoints exposed by the Authentication Service instance context */
@@ -22,6 +22,11 @@ export const ApiRoutes = {
       Register: '/v1/register',
       Logout: '/v1/logout',
       Refresh: '/v1/refresh',
+      VerifyEmail: '/v1/verify-email',
+      ForgotPassword: '/v1/forgot-password',
+      ResetPassword: '/v1/reset-password',
+      GetSessions: '/v1/sessions',
+      RevokeSession: '/v1/sessions/:sessionId',
     },
   },
 
