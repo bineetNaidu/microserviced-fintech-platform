@@ -9,6 +9,7 @@ import {
   resetPasswordSchema,
 } from '../../validators/auth.validator';
 import { config } from '../../config';
+import { ApiRoutes } from '@fintech/shared-config';
 
 export function createAuthRouter(controller: AuthController): Router {
   const router = Router();
@@ -16,37 +17,41 @@ export function createAuthRouter(controller: AuthController): Router {
 
   // ─── PUBLIC ROUTES ─────────────────────────────────────────────────────────
 
-  router.post('/v1/register', validateRequest({ body: registerSchema }), controller.register);
+  router.post(
+    ApiRoutes.Auth.v1.Register,
+    validateRequest({ body: registerSchema }),
+    controller.register,
+  );
 
   router.post(
-    '/v1/verify-email',
+    ApiRoutes.Auth.v1.VerifyEmail,
     validateRequest({ body: verifyEmailSchema }),
     controller.verifyEmail,
   );
 
-  router.post('/v1/login', validateRequest({ body: loginSchema }), controller.login);
+  router.post(ApiRoutes.Auth.v1.Login, validateRequest({ body: loginSchema }), controller.login);
 
-  router.post('/v1/refresh', controller.refresh);
+  router.post(ApiRoutes.Auth.v1.Refresh, controller.refresh);
 
   router.post(
-    '/v1/forgot-password',
+    ApiRoutes.Auth.v1.ForgotPassword,
     validateRequest({ body: forgotPasswordSchema }),
     controller.forgotPassword,
   );
 
   router.post(
-    '/v1/reset-password',
+    ApiRoutes.Auth.v1.ResetPassword,
     validateRequest({ body: resetPasswordSchema }),
     controller.resetPassword,
   );
 
   // ─── PROTECTED ROUTES ──────────────────────────────────────────────────────
 
-  router.post('/v1/logout', authenticate, controller.logout);
+  router.post(ApiRoutes.Auth.v1.Logout, authenticate, controller.logout);
 
-  router.get('/v1/sessions', authenticate, controller.getSessions);
+  router.get(ApiRoutes.Auth.v1.GetSessions, authenticate, controller.getSessions);
 
-  router.delete('/v1/sessions/:sessionId', authenticate, controller.revokeSession);
+  router.delete(ApiRoutes.Auth.v1.RevokeSession, authenticate, controller.revokeSession);
 
   return router;
 }

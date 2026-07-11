@@ -2,6 +2,7 @@ import 'dotenv/config';
 import Redis from 'ioredis';
 import { config } from './config';
 import { createApp } from './app';
+import { ApiRoutes } from '@fintech/shared-config';
 
 /**
  * API Gateway Bootstrap.
@@ -45,10 +46,10 @@ async function bootstrap() {
       `${loggerPrefix} Proxying:`,
       JSON.stringify(
         {
-          '/api/v1/auth': config.AUTH_SERVICE_URL,
-          '/api/v1/users': config.USER_SERVICE_URL,
-          '/api/v1/accounts': config.ACCOUNT_SERVICE_URL,
-          '/api/v1/transfers': config.TRANSFER_SERVICE_URL,
+          [ApiRoutes.ApiPrefixes.Auth]: config.AUTH_SERVICE_URL,
+          [ApiRoutes.ApiPrefixes.Users]: config.USER_SERVICE_URL,
+          [ApiRoutes.ApiPrefixes.Accounts]: config.ACCOUNT_SERVICE_URL,
+          [ApiRoutes.ApiPrefixes.Transfers]: config.TRANSFER_SERVICE_URL,
         },
         null,
         2,

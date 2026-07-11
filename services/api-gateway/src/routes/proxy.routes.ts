@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import type { Request } from 'express';
 import { config } from '../config';
+import { ApiRoutes } from '@fintech/shared-config';
 
 /**
  * API Gateway Proxy Routes.
@@ -45,7 +46,7 @@ export function createProxyRoutes(): Router {
   // PUBLIC: /api/v1/auth/* — does NOT require JWT (login, register, verify, etc.)
   // The jwtVerify middleware skips these paths based on PUBLIC_PATH_PREFIXES.
   router.use(
-    '/api/v1/auth',
+    ApiRoutes.ApiPrefixes.Auth,
     createProxyMiddleware({
       target: config.AUTH_SERVICE_URL,
       changeOrigin: true,
@@ -80,7 +81,7 @@ export function createProxyRoutes(): Router {
   // ─── User Service Routes ─────────────────────────────────────────────────
   // AUTHENTICATED: /api/v1/users/* — requires a valid JWT
   router.use(
-    '/api/v1/users',
+    ApiRoutes.ApiPrefixes.Users,
     createProxyMiddleware({
       target: config.USER_SERVICE_URL,
       changeOrigin: true,
@@ -115,7 +116,7 @@ export function createProxyRoutes(): Router {
   // ─── Account Service Routes ──────────────────────────────────────────────
   // AUTHENTICATED: /api/v1/accounts/* — requires a valid JWT
   router.use(
-    '/api/v1/accounts',
+    ApiRoutes.ApiPrefixes.Accounts,
     createProxyMiddleware({
       target: config.ACCOUNT_SERVICE_URL,
       changeOrigin: true,
@@ -150,7 +151,7 @@ export function createProxyRoutes(): Router {
   // ─── Transfer Service Routes ─────────────────────────────────────────────
   // AUTHENTICATED: /api/v1/transfers/* — requires a valid JWT
   router.use(
-    '/api/v1/transfers',
+    ApiRoutes.ApiPrefixes.Transfers,
     createProxyMiddleware({
       target: config.TRANSFER_SERVICE_URL,
       changeOrigin: true,
