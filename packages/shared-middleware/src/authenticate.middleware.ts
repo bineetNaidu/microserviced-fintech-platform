@@ -115,7 +115,8 @@ export function createAuthenticateMiddleware(jwtPublicKeyPem: string): RequestHa
    * must be synchronous (so it can be called in app.ts setup code). The middleware
    * awaits the promise before verification — it's resolved on the first request at most.
    */
-  const publicKeyPromise: Promise<KeyLike> = importSPKI(jwtPublicKeyPem, 'RS256');
+  const cleanPublicKeyPem = jwtPublicKeyPem.replace(/\\n/g, '\n').replace(/\r/g, '').trim();
+  const publicKeyPromise: Promise<KeyLike> = importSPKI(cleanPublicKeyPem, 'RS256');
 
   return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     const authHeader = req.headers.authorization;
