@@ -62,7 +62,7 @@ declare global {
  * Any route NOT listed here is treated as authenticated and goes through the
  * full pipeline: JWT verify → blocklist check → header injection → proxy.
  */
-const PUBLIC_PATH_PREFIXES = ['/api/v1/auth/'] as const;
+const PUBLIC_PATH_PREFIXES = ['/api/v1/auth/', '/healthz', '/readyz'] as const;
 
 /**
  * Checks if a request path matches any public (unauthenticated) route prefix.
