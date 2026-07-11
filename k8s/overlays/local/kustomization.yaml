@@ -1,0 +1,84 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# ─── Local Overlay ─────────────────────────────────────────────────────────────
+# This overlay customizes the base manifests for local Kubernetes development.
+# It is NOT used in production. For production, create k8s/overlays/production/.
+#
+# ─── HOW KUSTOMIZE OVERLAYS WORK ────────────────────────────────────────────────
+# 1. Kustomize reads the BASE manifests (../../base/)
+# 2. Applies the patches defined in THIS overlay
+# 3. Outputs the merged, final YAML
+#
+# Command: kubectl apply -k k8s/overlays/local/
+# Preview: kubectl kustomize k8s/overlays/local/
+#
+# No tools other than kubectl are needed — Kustomize is built into kubectl since v1.14.
+bases:
+  - ../../base
+
+# ─── Patches ──────────────────────────────────────────────────────────────────
+# Strategic merge patches: the patch is MERGED into the base resource.
+# Only the fields you specify are overridden — all other fields stay as the base defined them.
+patches:
+  # Patch 1: Reduce replicas for local dev (save laptop resources)
+  # Running 2 replicas of every service on a local cluster wastes memory.
+  # 1 replica is fine for local development where HA isn't needed.
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: auth-service
+        namespace: fintech
+      spec:
+        replicas: 1
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: api-gateway
+        namespace: fintech
+      spec:
+        replicas: 1
+
+  # Patch 2: Change api-gateway Service from LoadBalancer to NodePort
+  # LoadBalancer requires cloud provider integration (EKS, GKE, etc.).
+  # In local clusters (kind, minikube without tunnel), LoadBalancer Services never get an IP.
+  # NodePort exposes the service on every node's IP at a fixed port (8080).
+  # Access the gateway locally at: http://localhost:30080 (or the nodePort you set).
+  - patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: api-gateway
+        namespace: fintech
+      spec:
+        type: NodePort
+        ports:
+          - name: http
+            port: 80
+            targetPort: http
+            nodePort: 30080
+
+  # Patch 3: Development CORS origins
+  # In local dev, allow the Vite dev server (localhost:5173) and CRA (localhost:3000).
+  - patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: api-gateway-config
+        namespace: fintech
+      data:
+        ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
+        NODE_ENV: "development"
+
+  # Patch 4: Set auth-service to development mode
+  - patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: auth-service-config
+        namespace: fintech
+      data:
+        NODE_ENV: "development"
+        LOG_LEVEL: "debug"
