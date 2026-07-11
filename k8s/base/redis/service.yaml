@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: fintech
+  labels:
+    app: redis
+    component: cache
+spec:
+  # ClusterIP: Redis is only accessible WITHIN the Kubernetes cluster.
+  # No external traffic can reach it. Services in the fintech namespace
+  # connect to it via DNS: redis.fintech.svc.cluster.local:6379
+  # or simply: redis:6379 (within the same namespace).
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      port: 6379 # Port the Service listens on (what other services connect to)
+      targetPort: redis # Named port on the pod — matches containerPort name in deployment.yaml
+      protocol: TCP
+---
+# PersistentVolumeClaim for Redis data directory.
+# Requests 1Gi of storage from the cluster's default StorageClass.
+# The StorageClass determines the actual storage backend (SSD, HDD, network storage, etc.)
+# In local dev with kind or minikube, the default StorageClass uses local node storage.
+# In production (EKS, GKE): use a StorageClass backed by EBS (AWS) or Persistent Disk (GCP).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: fintech
+spec:
+  accessModes:
+    # ReadWriteOnce: This PVC can only be mounted by ONE node at a time.
+    # This is correct for Redis single-instance (only one pod uses it).
+    # For shared storage (e.g., static assets), use ReadWriteMany with NFS.
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Redis Secret — stores the Redis AUTH password.
+# IMPORTANT: In a real deployment, NEVER put the real password in a base manifest.
+# This is a PLACEHOLDER for learning purposes. In production:
+#   1. Use 'stringData' with a placeholder value in the base manifest
+#   2. In each overlay, use a SecretGenerator or a secrets management tool
+#      (HashiCorp Vault, AWS Secrets Manager with External Secrets Operator)
+#   3. Never commit the actual secret value to Git
+#
+# The value here ('cmVkaXNfcGFzcw==') is the base64 of 'redis_pass'.
+# base64 is NOT encryption — it's just encoding. Anyone with cluster access can decode it.
+# Real secrets management encrypts the value before storing it in etcd.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+  namespace: fintech
+type: Opaque
+data:
+  # echo -n 'redis_pass' | base64  →  cmVkaXNfcGFzcw==
+  # REPLACE THIS IN PRODUCTION with your actual secret via Kustomize secretGenerator
+  # or an external secrets operator. This value is a placeholder for local dev only.
+  password: cmVkaXNfcGFzcw==

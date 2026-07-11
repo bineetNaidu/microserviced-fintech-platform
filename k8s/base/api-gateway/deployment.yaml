@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: fintech
+  labels:
+    app: api-gateway
+    component: gateway
+    tier: edge
+spec:
+  # 2 replicas: the gateway is stateless and handles ALL external traffic.
+  # Even more than backend services, the gateway benefits from HA —
+  # a gateway crash affects EVERY client, not just users of one service.
+  #
+  # In production, scale this based on requests-per-second (RPS) metrics.
+  # At 10k RPS, 3-4 replicas with 0.5 vCPU each is a common starting point.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+        component: gateway
+        tier: edge
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - api-gateway
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: api-gateway
+          image: fintech/api-gateway:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: api-gateway-config
+          env:
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-secret
+                  key: REDIS_URL
+            - name: JWT_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-secret
+                  key: JWT_PUBLIC_KEY
+          resources:
+            requests:
+              # The gateway is CPU-light (async I/O + proxy) but handles high request volume.
+              # Give it more CPU than individual services since it's in the critical path.
+              memory: '128Mi'
+              cpu: '150m'
+            limits:
+              memory: '256Mi'
+              cpu: '500m'
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15 # Gateway boots fast — only Redis connection needed
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3

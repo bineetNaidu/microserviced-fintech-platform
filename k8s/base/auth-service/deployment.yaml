@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: fintech
+  labels:
+    app: auth-service
+    component: service
+    tier: backend
+spec:
+  # 2 replicas for HA — if one pod crashes or is evicted, traffic continues.
+  # The auth service is STATELESS (all state is in PostgreSQL + Redis) —
+  # this means you CAN run multiple replicas safely. Each replica:
+  #   • Reads from the same PostgreSQL database
+  #   • Writes JTIs to the same Redis instance (critical for blocklist consistency)
+  #   • Consumes from the same RabbitMQ queue (competing consumers pattern)
+  #
+  # Never scale the STATEFUL backing services (Redis, PostgreSQL) horizontally
+  # without understanding replication and consistency implications first.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        component: service
+        tier: backend
+    spec:
+      # Spread pods across different NODES for true HA.
+      # If both replicas land on the same node and that node fails,
+      # both pods die simultaneously — defeating the purpose of 2 replicas.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - auth-service
+                # Spread across different nodes (kubernetes.io/hostname)
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: auth-service
+          # Image tag is overridden per-environment via Kustomize overlays.
+          # The base manifest uses a generic tag; the overlay specifies ':v1.2.3' for prod.
+          image: fintech/auth-service:latest
+          ports:
+            - containerPort: 3001
+              name: http
+          envFrom:
+            # ConfigMap for non-sensitive environment variables (PORT, NODE_ENV, SERVICE_NAME)
+            - configMapRef:
+                name: auth-service-config
+          env:
+            # Sensitive values come from Kubernetes Secrets, NOT ConfigMaps.
+            # ConfigMaps are visible to anyone with read access to the namespace.
+            # Secrets are base64-encoded and can be encrypted at rest via KMS.
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: REDIS_URL
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: RABBITMQ_URL
+            - name: JWT_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: JWT_PRIVATE_KEY
+            - name: JWT_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: JWT_PUBLIC_KEY
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '256Mi'
+              cpu: '500m'
+          livenessProbe:
+            # httpGet liveness probe: calls GET /healthz on the container.
+            # Kubernetes restarts the pod if this returns non-2xx 3 times in a row.
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30 # Auth service needs time to: connect DB, Redis, RabbitMQ, import RSA keys
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            # Readiness probe: K8s removes pod from Service endpoints if this fails.
+            # The pod stops receiving traffic but is not restarted.
+            # This is correct for temporary failures (DB connection flap, Redis lag).
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3

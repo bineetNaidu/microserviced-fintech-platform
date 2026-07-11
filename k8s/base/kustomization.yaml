@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# ─── Namespace ────────────────────────────────────────────────────────────────
+# Kustomize can set the namespace on ALL resources in this kustomization.
+# Combined with the namespace.yaml resource below, this creates and uses the 'fintech' namespace.
+namespace: fintech
+
+# ─── Resources ────────────────────────────────────────────────────────────────
+# All resources included in the BASE configuration.
+# Overlays can add, remove, or patch any of these resources.
+# Order doesn't matter to Kubernetes (it's declarative), but logical grouping helps humans.
+resources:
+  # Platform Namespace
+  - namespace.yaml
+
+  # Infrastructure Services
+  - redis/deployment.yaml
+  - redis/service.yaml
+
+  # Application Services
+  - auth-service/deployment.yaml
+  - auth-service/service.yaml
+
+  # Edge Layer
+  - api-gateway/deployment.yaml
+  - api-gateway/service.yaml
+
+# ─── Common Labels ────────────────────────────────────────────────────────────
+# These labels are added to ALL resources in this kustomization.
+# Useful for:
+#   - kubectl get all --selector=project=fintech-platform
+#   - Prometheus ServiceMonitor selectors
+#   - Grafana dashboard filtering by project
+commonLabels:
+  project: fintech-platform
+  managed-by: kustomize

@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: fintech
+  labels:
+    app: auth-service
+    component: service
+spec:
+  # ClusterIP: auth-service is internal-only.
+  # External clients NEVER reach it directly — all traffic goes through api-gateway.
+  # The API Gateway's pod accesses it via: http://auth-service.fintech.svc.cluster.local:3001
+  # or simply: http://auth-service:3001 (within the fintech namespace).
+  type: ClusterIP
+  selector:
+    app: auth-service
+  ports:
+    - name: http
+      port: 3001
+      targetPort: http # Named port in the Deployment's containerPort spec
+      protocol: TCP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-service-config
+  namespace: fintech
+data:
+  # Non-sensitive configuration values — safe to store in a ConfigMap.
+  # Sensitive values (DATABASE_URL, Redis credentials, JWT keys) go in auth-service-secret.
+  NODE_ENV: 'production'
+  SERVICE_NAME: 'auth-service'
+  PORT: '3001'
+  LOG_LEVEL: 'info'
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: auth-service-secret
+  namespace: fintech
+type: Opaque
+# IMPORTANT: This is a PLACEHOLDER manifest for learning purposes.
+# In production, NEVER commit real credentials to Git.
+#
+# How to manage secrets properly:
+#   Option 1 (Simple): Use `kubectl create secret generic auth-service-secret --from-file=...`
+#            after applying the base manifests. The secret is created outside Git.
+#
+#   Option 2 (Kustomize): Use Kustomize's secretGenerator in each overlay with a separate
+#            .env file that is gitignored. Kustomize generates the secret at apply time.
+#
+#   Option 3 (Production): Use External Secrets Operator with AWS Secrets Manager / Vault.
+#            The Secret object becomes a reference to the real secret store — no credentials in Git.
+#
+# The stringData field is a convenience — K8s automatically base64-encodes these values.
+# (Unlike 'data:' which requires pre-encoded values.)
+stringData:
+  DATABASE_URL: 'postgresql://fintech_user:REPLACE_ME@postgres:5432/auth_db'
+  REDIS_URL: 'redis://:REPLACE_ME@redis:6379'
+  RABBITMQ_URL: 'amqp://fintech_user:REPLACE_ME@rabbitmq:5672'
+  JWT_PRIVATE_KEY: 'REPLACE_ME_WITH_RSA_PRIVATE_KEY_PEM'
+  JWT_PUBLIC_KEY: 'REPLACE_ME_WITH_RSA_PUBLIC_KEY_PEM'

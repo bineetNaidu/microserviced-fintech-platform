@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: fintech
+  labels:
+    app: redis
+    component: cache
+spec:
+  # Redis is intentionally deployed as a SINGLE replica.
+  #
+  # WHY NOT 3 REPLICAS?
+  # Redis single-instance is stateful — you can't just add replicas like a stateless
+  # service. Multiple Redis replicas require Redis Sentinel (HA with failover) or
+  # Redis Cluster (sharding). Both have significant operational complexity.
+  #
+  # For production: migrate to a managed Redis service (AWS ElastiCache, Google Memorystore)
+  # which handles replication, failover, and backup automatically.
+  # For local/staging K8s: single replica is acceptable.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        component: cache
+    spec:
+      containers:
+        - name: redis
+          # redis:7-alpine — same version as docker-compose.yml for consistency
+          image: redis:7-alpine
+          args:
+            - redis-server
+            - --requirepass
+            - $(REDIS_PASSWORD)
+            - --maxmemory
+            - 256mb
+            # allkeys-lru: evict least recently used keys when memory is full.
+            # This is safe for our use case — blocklist entries with short TTLs
+            # will naturally be the LRU candidates when memory pressure occurs.
+            - --maxmemory-policy
+            - allkeys-lru
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                # The REDIS_PASSWORD comes from a Kubernetes Secret named 'redis-secret'.
+                # Secrets are base64-encoded in the manifest but encrypted at rest in etcd
+                # (when KMS encryption is configured on the cluster — do this in production).
+                secretKeyRef:
+                  name: redis-secret
+                  key: password
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            requests:
+              # Requests: the GUARANTEED resources this container gets.
+              # K8s scheduler uses this for bin-packing decisions.
+              memory: '128Mi'
+              cpu: '100m' # 0.1 vCPU
+            limits:
+              # Limits: the MAXIMUM resources before K8s throttles (CPU) or kills (memory).
+              # OOMKill on the Redis pod is bad — keep limits > usage with headroom.
+              memory: '256Mi'
+              cpu: '250m' # 0.25 vCPU
+          livenessProbe:
+            # Liveness: "Is Redis alive?" — K8s restarts the pod if this fails.
+            exec:
+              command:
+                - redis-cli
+                - -a
+                - $(REDIS_PASSWORD)
+                - ping
+            initialDelaySeconds: 15 # Wait 15s after pod start before probing
+            periodSeconds: 20 # Probe every 20s
+            timeoutSeconds: 5
+            failureThreshold: 3 # Restart after 3 consecutive failures
+          readinessProbe:
+            # Readiness: "Is Redis ready to serve traffic?"
+            # K8s removes the pod from Service endpoints if this fails.
+            exec:
+              command:
+                - redis-cli
+                - -a
+                - $(REDIS_PASSWORD)
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        # PersistentVolumeClaim provides durable storage that survives pod restarts.
+        # If a pod is rescheduled to a new node, the PVC reattaches to the new node.
+        # Without this, all blocklist data is lost on pod restart.
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis-pvc
