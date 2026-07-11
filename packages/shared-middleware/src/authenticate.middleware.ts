@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
-import { jwtVerify, type JWTPayload } from 'jose';
+import { jwtVerify, importSPKI, type KeyLike, type JWTPayload } from 'jose';
 import { UnauthorizedError, ForbiddenError } from '@fintech/shared-errors';
 import type { UserRole } from '@fintech/shared-types';
 
@@ -65,47 +65,57 @@ const VALID_ROLES = new Set<string>(['CUSTOMER', 'MAKER', 'CHECKER', 'OPERATIONS
 /**
  * Factory that creates the JWT Authentication Middleware for a specific service instance.
  *
+ * ─── UPGRADED TO RS256 ASYMMETRIC VERIFICATION (ADR-005) ─────────────────────
+ * This middleware has been upgraded from HS256 (symmetric shared secret) to RS256
+ * (asymmetric public key). Each service now receives only the RSA PUBLIC KEY —
+ * it can verify tokens but CANNOT sign new ones.
+ *
+ * WHY THIS MATTERS:
+ * With HS256, every service shared the same secret. If any one of the 13 services
+ * was compromised, the attacker could forge tokens for any user as any role.
+ *
+ * With RS256, each downstream service holds only the public key:
+ *   • The auth service signs tokens with the PRIVATE key (only it can issue tokens)
+ *   • All other services verify with the PUBLIC key (they can only check, not forge)
+ *   • A compromised service leaks the public key — which is safe to expose publicly anyway
+ *
  * ─── WHY A FACTORY INSTEAD OF DIRECT MIDDLEWARE? ─────────────────────────────
- * Each service has its own JWT secret stored in its environment config (JWT_SECRET env var).
- * Exporting a bare middleware would require reading process.env at module load time,
- * which breaks testability (you cannot inject a test secret). A factory accepts the
- * secret explicitly and closes over it, creating a testable, predictable middleware.
+ * Each service reads its public key from its own environment config.
+ * A factory accepts the key explicitly and closes over it, creating a testable,
+ * independently-configurable middleware per service.
  *
  * ─── WHY JOSE INSTEAD OF JSONWEBTOKEN? ───────────────────────────────────────
- * `jsonwebtoken` (the older library) has known security issues:
+ * `jsonwebtoken` has known security issues:
  *   • Accepts `algorithm: 'none'` if not explicitly blocked — allows signature bypass
  *   • Synchronous API — blocks the event loop for large tokens
  *   • CommonJS only — incompatible with modern ESM-first runtimes
  *
- * `jose` (the modern library) is:
+ * `jose` is:
  *   • Async by default — non-blocking JWT verification
  *   • Secure defaults — no algorithm confusion attacks out of the box
  *   • Standards-compliant — works across Node.js, Deno, Cloudflare Workers, browsers
  *   • Full TypeScript types — no @types/jose needed
  *
- * ─── ALGORITHM: HS256 (HMAC-SHA256) ─────────────────────────────────────────
- * We use a symmetric shared secret because the Auth Service is the only token issuer
- * and other services only verify. HS256 is simpler to set up than RS256 (asymmetric).
- * If you later need a public JWKS endpoint (e.g., for 3rd-party integrations or to
- * rotate keys without redeploying all services), migrate to RS256 or ES256.
- *
- * @param jwtSecret - The HS256 signing secret from the service config (e.g., config.JWT_SECRET)
+ * @param jwtPublicKeyPem - The RSA public key PEM string from the service config (e.g., config.JWT_PUBLIC_KEY)
  * @returns Express middleware that validates Bearer tokens and populates req.user
  *
  * @example
  * // In service app.ts setup:
  * import { createAuthenticateMiddleware } from '@fintech/shared-middleware';
- * const authenticate = createAuthenticateMiddleware(config.JWT_SECRET);
+ * const authenticate = createAuthenticateMiddleware(config.JWT_PUBLIC_KEY);
  * app.use('/v1/transfers', authenticate, transferRoutes);
  */
-export function createAuthenticateMiddleware(jwtSecret: string): RequestHandler {
+export function createAuthenticateMiddleware(jwtPublicKeyPem: string): RequestHandler {
   /**
-   * Pre-encode the secret ONCE at startup (not on every request).
-   * jose requires a Uint8Array for HMAC keys.
-   * TextEncoder converts the UTF-8 string secret into bytes.
-   * Doing this at factory call time avoids re-encoding on every HTTP request.
+   * Pre-import the RSA public key ONCE at factory call time (not on every request).
+   * importSPKI() is an async WebCrypto operation — it's expensive enough that doing it
+   * per-request would add measurable latency at scale.
+   *
+   * We use a Promise here because importSPKI is async, but the factory function itself
+   * must be synchronous (so it can be called in app.ts setup code). The middleware
+   * awaits the promise before verification — it's resolved on the first request at most.
    */
-  const secretKey = new TextEncoder().encode(jwtSecret);
+  const publicKeyPromise: Promise<KeyLike> = importSPKI(jwtPublicKeyPem, 'RS256');
 
   return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     const authHeader = req.headers.authorization;
@@ -123,17 +133,20 @@ export function createAuthenticateMiddleware(jwtSecret: string): RequestHandler 
     const token = authHeader.slice(7);
 
     try {
+      // Resolve the pre-imported public key (resolved on first call, cached thereafter)
+      const publicKey = await publicKeyPromise;
+
       // ─── Step 2: Verify JWT signature and standard registered claims ──────
       //
       // jwtVerify() automatically validates:
       //   • Signature integrity (tamper detection) — throws JWSSignatureVerificationFailed
+      //   • Algorithm enforcement — only RS256 accepted (rejects HS256, 'none', etc.)
       //   • Expiry (exp claim) — throws JWTExpired if token is past expiry
       //   • Not-before (nbf claim) if present — throws JWTClaimValidationFailed
-      //   • Algorithm enforcement — only HS256 accepted (rejects RS256, 'none', etc.)
       //
       // We do NOT need to manually check exp or iat — jose handles this.
-      const { payload } = await jwtVerify<AppJWTPayload>(token, secretKey, {
-        algorithms: ['HS256'],
+      const { payload } = await jwtVerify<AppJWTPayload>(token, publicKey, {
+        algorithms: ['RS256'], // Explicit whitelist — prevents algorithm confusion attacks
       });
 
       // ─── Step 3: Validate required application-specific claims are present ─
@@ -152,9 +165,8 @@ export function createAuthenticateMiddleware(jwtSecret: string): RequestHandler 
       // ─── Step 4: Validate the role is a known UserRole value ──────────────
       //
       // Guards against tokens with tampered or stale role values.
-      // Example scenario: a CUSTOMER token where `role` has been set to 'ADMIN' via
-      // a forged token — this check would catch it even if the signature verified
-      // (which it wouldn't, but defense-in-depth applies).
+      // Example: a token where `role` has been set to 'ADMIN' via a crafted payload —
+      // this check would catch it even if the signature somehow verified.
       if (!VALID_ROLES.has(payload.role)) {
         return next(
           new ForbiddenError(
