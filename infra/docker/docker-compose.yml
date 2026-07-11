@@ -67,7 +67,7 @@ services:
     networks:
       - fintech-network
 
-  # ─── Redis 7 (Alpine) ───────────────────────────────────────────────────────
+  # ─── Redis 7.2 (Alpine) ───────────────────────────────────────────────────────
   # Shared Redis instance used for:
   #   1. JWT blocklist — access token JTIs written on logout (ADR-007)
   #   2. Rate limiting counters — atomic Lua scripts per IP/user (shared-middleware)
@@ -77,14 +77,11 @@ services:
   # In production, Redis would be a managed Redis Cluster (e.g., ElastiCache)
   # or Redis Sentinel for HA. For local dev, a single instance is sufficient.
   redis:
-    image: redis:7-alpine
+    image: redis:7.2-alpine
     container_name: fintech-redis
     restart: unless-stopped
     command: >
-      redis-server
-      --requirepass ${REDIS_PASSWORD:-redis_pass}
-      --maxmemory 256mb
-      --maxmemory-policy allkeys-lru
+      redis-server --requirepass ${REDIS_PASSWORD:-redis_pass} --maxmemory 256mb --maxmemory-policy allkeys-lru
     # maxmemory-policy allkeys-lru: when Redis is full, evict the least recently
     # used keys. Safe for our use case — expired blocklist entries will naturally
     # be the LRU candidates. NEVER use noeviction for a blocklist (would cause OOM).
