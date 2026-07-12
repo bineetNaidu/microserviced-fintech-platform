@@ -1,5 +1,23 @@
-import { pgTable, uuid, varchar, boolean, integer, timestamp, text } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  varchar,
+  boolean,
+  integer,
+  timestamp,
+  text,
+  pgEnum,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+
+// Define the UserRole enum in the database matching the system RBAC domain
+export const userRoleEnum = pgEnum('user_role', [
+  'CUSTOMER',
+  'MAKER',
+  'CHECKER',
+  'OPERATIONS',
+  'AUDITOR',
+]);
 
 /**
  * Users Table Schema
@@ -13,7 +31,7 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
-  role: varchar('role', { length: 50 }).notNull().default('CUSTOMER'),
+  role: userRoleEnum('role').notNull().default('CUSTOMER'),
   isEmailVerified: boolean('is_email_verified').notNull().default(false),
   isSuspended: boolean('is_suspended').notNull().default(false),
   failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),
