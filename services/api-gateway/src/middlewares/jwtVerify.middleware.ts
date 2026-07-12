@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import { jwtVerify, importSPKI, type KeyLike, type JWTPayload } from 'jose';
 import { UnauthorizedError } from '@fintech/shared-errors';
 import type { UserRole } from '@fintech/shared-types';
+import { ApiRoutes } from '@fintech/shared-config';
 
 /**
  * Gateway-specific JWT payload shape.
@@ -62,7 +63,12 @@ declare global {
  * Any route NOT listed here is treated as authenticated and goes through the
  * full pipeline: JWT verify → blocklist check → header injection → proxy.
  */
-const PUBLIC_PATH_PREFIXES = ['/api/v1/auth/', '/healthz', '/readyz'] as const;
+const PUBLIC_PATH_PREFIXES = [
+  `${ApiRoutes.ApiPrefixes.Auth}${ApiRoutes.Auth.v1.Login}`,
+  `${ApiRoutes.ApiPrefixes.Auth}${ApiRoutes.Auth.v1.Register}`,
+  '/healthz',
+  '/readyz',
+] as const;
 
 /**
  * Checks if a request path matches any public (unauthenticated) route prefix.

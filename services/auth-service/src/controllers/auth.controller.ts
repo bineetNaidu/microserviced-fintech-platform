@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import type { AuthService } from '../services/auth.service';
 import type { SessionService } from '../services/session.service';
 import { BadRequestError, ForbiddenError, NotFoundError } from '@fintech/shared-errors';
+import { ApiRoutes } from '@fintech/shared-config';
 
 export class AuthController {
   private readonly cookieName = 'refreshToken';
@@ -10,7 +11,6 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly sessionService: SessionService,
-    // eslint-disable-next-line prettier/prettier
   ) {}
 
   /** Sets HttpOnly secure cookie for the refresh token rotate loop */
@@ -19,7 +19,7 @@ export class AuthController {
       httpOnly: true,
       secure: this.isProduction, // HTTPS required in production
       sameSite: 'lax',
-      path: '/api/v1/auth', // Restrict cookie transport solely to auth paths
+      path: ApiRoutes.ApiPrefixes.Auth, // Restrict cookie transport solely to auth paths
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
   }
@@ -30,7 +30,7 @@ export class AuthController {
       httpOnly: true,
       secure: this.isProduction,
       sameSite: 'lax',
-      path: '/api/v1/auth',
+      path: ApiRoutes.ApiPrefixes.Auth,
     });
   }
 
