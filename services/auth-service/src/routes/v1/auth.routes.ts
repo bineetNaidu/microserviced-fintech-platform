@@ -17,31 +17,27 @@ export function createAuthRouter(controller: AuthController): Router {
 
   // ─── PUBLIC ROUTES ─────────────────────────────────────────────────────────
 
-  router.post(
-    ApiRoutes.Auth.v1.Register,
-    validateRequest({ body: registerSchema }),
-    controller.register,
-  );
+  router.post(ApiRoutes.Auth.v1.Register, validateRequest(registerSchema), controller.register);
 
   router.post(
     ApiRoutes.Auth.v1.VerifyEmail,
-    validateRequest({ body: verifyEmailSchema }),
+    validateRequest(verifyEmailSchema),
     controller.verifyEmail,
   );
 
-  router.post(ApiRoutes.Auth.v1.Login, validateRequest({ body: loginSchema }), controller.login);
+  router.post(ApiRoutes.Auth.v1.Login, validateRequest(loginSchema), controller.login);
 
   router.post(ApiRoutes.Auth.v1.Refresh, controller.refresh);
 
   router.post(
     ApiRoutes.Auth.v1.ForgotPassword,
-    validateRequest({ body: forgotPasswordSchema }),
+    validateRequest(forgotPasswordSchema),
     controller.forgotPassword,
   );
 
   router.post(
     ApiRoutes.Auth.v1.ResetPassword,
-    validateRequest({ body: resetPasswordSchema }),
+    validateRequest(resetPasswordSchema),
     controller.resetPassword,
   );
 
