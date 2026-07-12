@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "prebuild": "npm run clean",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "ts-node src/db/migrate.ts"
   },
   "dependencies": {
     "@fintech/shared-config": "*",
