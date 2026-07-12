@@ -53,7 +53,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       # Init scripts run ONCE on first startup (when the data volume is empty).
       # Creates all service databases so we don't need separate init steps.
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ../postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       # pg_isready exits 0 when Postgres is accepting connections.
       # Other services use `depends_on: postgres: condition: service_healthy`
