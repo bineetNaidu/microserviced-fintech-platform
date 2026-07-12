@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { defineConfig } from 'drizzle-kit';
 
 /**
@@ -15,7 +16,7 @@ export default defineConfig({
   out: './db/migrations',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    url: 'postgresql://fintech_user:change_me_in_production@localhost:5432/auth_db', //process.env.DATABASE_URL!,
   },
   verbose: true,
   strict: true,
