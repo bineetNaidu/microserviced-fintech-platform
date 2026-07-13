@@ -21,3 +21,4 @@ export * from './auth.middleware';
 export * from './authenticate.middleware';
 export * from './rateLimiter.middleware';
 export * from './requestLogger.middleware';
+export * from './internal.middleware';
