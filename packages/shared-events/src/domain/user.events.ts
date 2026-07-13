@@ -4,13 +4,9 @@ import type { EventEnvelope } from '../envelope';
 export interface UserRegisteredEventData {
   userId: UUID;
   email: string;
-  fullName: string;
-  /**
-   * Phone number is optional at registration — users may add it later during KYC.
-   * If null, the notification service must skip SMS-based alerts for this user.
-   */
-  phoneNumber: string | null;
-  timestamp: string; // ISO 8601 — consistent with EventEnvelope.timestamp convention
+  role: string;
+  verificationToken: string;
+  occurredAt: string;
 }
 
 export interface UserKycStatusChangedEventData {
