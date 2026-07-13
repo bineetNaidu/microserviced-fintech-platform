@@ -1,12 +1,11 @@
 import { Router } from 'express';
-import { validateRequest } from '@fintech/shared-middleware';
+import { validateRequest, requireInternalApiKey } from '@fintech/shared-middleware';
 import type { UserController } from '../../controllers/user.controller';
 import {
   createProfileSchema,
   updateProfileSchema,
   submitKycSchema,
 } from '../../validators/user.validator';
-import { requireInternalApiKey } from '../../middlewares/internal.middleware';
 import { config } from '../../config';
 import { ApiRoutes } from '@fintech/shared-config';
 
