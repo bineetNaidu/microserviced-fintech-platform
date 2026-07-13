@@ -19,3 +19,4 @@ export * from './dto/transfer.dto';
 export * from './dto/approval.dto';
 export * from './dto/audit.dto';
 export * from './dto/operations.dto';
+export * from './dto/ledger.dto';

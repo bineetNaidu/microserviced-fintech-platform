@@ -74,6 +74,11 @@ export const ErrorCode = {
    */
   KYC_NOT_APPROVED: 'KYC_NOT_APPROVED',
 
+  /**
+   * Thrown when a when there is a conflict
+   * **/
+  CONFLICT: 'CONFLICT',
+
   // ─── Authentication & Authorization ─────────────────────────────────────────
   /** Thrown when JWT is missing, malformed, expired, or signature verification fails */
   UNAUTHORIZED: 'UNAUTHORIZED',
