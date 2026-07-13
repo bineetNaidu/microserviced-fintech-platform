@@ -40,12 +40,13 @@ export class AuthController {
       const { email, password } = req.body;
       const correlationId = req.correlationId!;
 
-      await this.authService.register(email, password, correlationId);
+      const { verificationToken } = await this.authService.register(email, password, correlationId);
 
       res.status(201).json({
         success: true,
         data: {
           message: 'Registration successful. Please verify your email address to log in.',
+          verificationToken,
         },
         meta: null,
       });

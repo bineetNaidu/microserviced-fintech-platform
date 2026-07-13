@@ -24,7 +24,6 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly passwordService: PasswordService,
     private readonly publisher: AuthPublisher,
-    // eslint-disable-next-line prettier/prettier
   ) {}
 
   /** Hashes a token using SHA-256 for lookup matching */
@@ -38,7 +37,11 @@ export class AuthService {
   }
 
   /** Registers a new user account, generates email verification tokens, and publishes user.registered */
-  async register(email: string, password: string, correlationId: string): Promise<AuthUser> {
+  async register(
+    email: string,
+    password: string,
+    correlationId: string,
+  ): Promise<{ user: AuthUser; verificationToken: string }> {
     // ─── Step 1: Check duplicate emails ───────────────────────────────────
     const existingUser = await this.userRepo.findByEmail(email);
     if (existingUser) {
@@ -57,6 +60,9 @@ export class AuthService {
 
     await this.tokenRepo.createEmailVerificationToken(user.id, tokenHash, expiresAt);
 
+    // Print raw token to terminal console for local sandbox copy-pasting
+    // console.log(`\n[SANDBOX DEV HELPER] Verification Token generated for ${email}: ${rawToken}\n`);
+
     // ─── Step 4: Publish event ───────────────────────────────────────────
     await this.publisher.publishUserRegistered(
       user.id,
@@ -66,7 +72,7 @@ export class AuthService {
       correlationId,
     );
 
-    return user;
+    return { user, verificationToken: rawToken };
   }
 
   /** Verifies a user email via token */
