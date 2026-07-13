@@ -1,10 +1,10 @@
-import type { UserRepository, UserProfileDomain } from '../repositories/user.repository';
+import type { UserRepository } from '../repositories/user.repository';
 import type { KycRepository, KycSubmissionDomain } from '../repositories/kyc.repository';
 import type { UserPublisher } from '../events/publishers/user.publisher';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../db/schema';
 import { NotFoundError, ForbiddenError } from '@fintech/shared-errors';
-import type { KycStatus } from '@fintech/shared-types';
+import type { KycStatus, UserProfile } from '@fintech/shared-types';
 
 export class UserService {
   constructor(
@@ -17,7 +17,7 @@ export class UserService {
   /**
    * Retrieves the profile (including preferences) for a user.
    */
-  async getProfile(userId: string): Promise<UserProfileDomain> {
+  async getProfile(userId: string): Promise<UserProfile> {
     const profile = await this.userRepo.findById(userId);
     if (!profile) {
       throw new NotFoundError('User profile not found.');
@@ -29,7 +29,7 @@ export class UserService {
    * Updates user profile and preferences.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async updateProfile(userId: string, updates: any): Promise<UserProfileDomain> {
+  async updateProfile(userId: string, updates: any): Promise<UserProfile> {
     const profile = await this.userRepo.findById(userId);
     if (!profile) {
       throw new NotFoundError('User profile not found.');

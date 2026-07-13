@@ -1,13 +1,13 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { UserService } from '../services/user.service';
 import { UnauthorizedError } from '@fintech/shared-errors';
-import { UserProfileDomain } from '../repositories/user.repository';
+import type { UserProfile } from '@fintech/shared-types';
 
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   /** Formats user profile payload to satisfy both the manual and frontend formats */
-  private formatProfileResponse(profile: UserProfileDomain) {
+  private formatProfileResponse(profile: UserProfile) {
     return {
       id: profile.id,
       email: profile.email,

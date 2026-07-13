@@ -1,7 +1,7 @@
 import type { NodePgDatabase, NodePgTransaction } from 'drizzle-orm/node-postgres';
 import { eq, and, isNull, ExtractTablesWithRelations } from 'drizzle-orm';
 import * as schema from '../db/schema';
-import type { KycStatus } from '@fintech/shared-types';
+import type { KycStatus, UserProfile } from '@fintech/shared-types';
 
 export type DbKycStatus = 'pending' | 'submitted' | 'verified' | 'rejected' | 'suspended';
 
@@ -34,35 +34,6 @@ export function toDbKycStatus(status: KycStatus): DbKycStatus {
   return map[status] || 'pending';
 }
 
-export interface UserProfileDomain {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string | null;
-  dateOfBirth: string | null;
-  addressLine1: string | null;
-  addressLine2: string | null;
-  city: string | null;
-  state: string | null;
-  postalCode: string | null;
-  country: string;
-  kycStatus: KycStatus;
-  kycVerifiedAt: Date | null;
-  kycVerifiedBy: string | null;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  preferences: {
-    language: string;
-    timezone: string;
-    emailNotificationsEnabled: boolean;
-    smsNotificationsEnabled: boolean;
-    pushNotificationsEnabled: boolean;
-    transferNotificationThreshold: number;
-  } | null;
-}
-
 export class UserRepository {
   constructor(private readonly db: NodePgDatabase<typeof schema>) {}
 
@@ -74,7 +45,7 @@ export class UserRepository {
   private toDomain(
     profile: typeof schema.userProfiles.$inferSelect,
     prefs?: typeof schema.userPreferences.$inferSelect | null,
-  ): UserProfileDomain {
+  ): UserProfile {
     return {
       id: profile.id,
       email: profile.email,
@@ -108,7 +79,7 @@ export class UserRepository {
   }
 
   /** Finds a profile by ID, with preferences joined */
-  async findById(id: string, tx?: TransactionContext): Promise<UserProfileDomain | null> {
+  async findById(id: string, tx?: TransactionContext): Promise<UserProfile | null> {
     const result = await this.getDb(tx).query.userProfiles.findFirst({
       where: and(eq(schema.userProfiles.id, id), isNull(schema.userProfiles.deletedAt)),
       with: {
@@ -123,7 +94,7 @@ export class UserRepository {
   }
 
   /** Finds a profile by email, with preferences joined */
-  async findByEmail(email: string, tx?: TransactionContext): Promise<UserProfileDomain | null> {
+  async findByEmail(email: string, tx?: TransactionContext): Promise<UserProfile | null> {
     const result = await this.getDb(tx).query.userProfiles.findFirst({
       where: and(eq(schema.userProfiles.email, email), isNull(schema.userProfiles.deletedAt)),
       with: {
@@ -147,7 +118,7 @@ export class UserRepository {
       phoneNumber?: string;
     },
     tx?: TransactionContext,
-  ): Promise<UserProfileDomain> {
+  ): Promise<UserProfile> {
     const dbContext = this.getDb(tx);
 
     // Provision user_profiles row
@@ -201,7 +172,7 @@ export class UserRepository {
       };
     },
     tx?: TransactionContext,
-  ): Promise<UserProfileDomain> {
+  ): Promise<UserProfile> {
     const dbContext = this.getDb(tx);
 
     const profileUpdates: Partial<typeof schema.userProfiles.$inferInsert> = {
@@ -291,7 +262,7 @@ export class UserRepository {
     status: KycStatus,
     reviewerId?: string,
     tx?: TransactionContext,
-  ): Promise<UserProfileDomain> {
+  ): Promise<UserProfile> {
     const dbContext = this.getDb(tx);
     const dbStatus = toDbKycStatus(status);
 

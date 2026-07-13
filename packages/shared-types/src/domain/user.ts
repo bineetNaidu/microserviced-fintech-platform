@@ -11,6 +11,18 @@ export type UserRole = 'CUSTOMER' | 'MAKER' | 'CHECKER' | 'OPERATIONS' | 'AUDITO
  */
 export type KycStatus = 'PENDING' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
 
+/**
+ * Locale, timezone, and notification configurations for a user.
+ */
+export interface UserPreferences {
+  language: string;
+  timezone: string;
+  emailNotificationsEnabled: boolean;
+  smsNotificationsEnabled: boolean;
+  pushNotificationsEnabled: boolean;
+  transferNotificationThreshold: number;
+}
+
 export interface UserProfile {
   /** Matches the core auth entry identifier exactly */
   id: UUID;
@@ -18,9 +30,18 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   phoneNumber: string | null;
+  dateOfBirth: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  country: string;
   kycStatus: KycStatus;
-  role: UserRole;
+  kycVerifiedAt: Date | null;
+  kycVerifiedBy: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  preferences: UserPreferences | null;
 }
