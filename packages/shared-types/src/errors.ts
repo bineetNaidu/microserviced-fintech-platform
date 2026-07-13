@@ -22,6 +22,9 @@ export const ErrorCode = {
   /** Thrown when the target account has status = 'FROZEN' — mutations are blocked */
   ACCOUNT_FROZEN: 'ACCOUNT_FROZEN',
 
+  /** Thrown when the target account has status is not = 'FROZEN' — mutations are blocked */
+  ACCOUNT_NOT_FROZEN: 'ACCOUNT_NOT_FROZEN',
+
   /** Thrown when no account row exists with the given ID in the Account Service */
   ACCOUNT_NOT_FOUND: 'ACCOUNT_NOT_FOUND',
 
@@ -30,6 +33,16 @@ export const ErrorCode = {
    * Distinct from ACCOUNT_NOT_FOUND: the account exists but is permanently decommissioned.
    */
   ACCOUNT_CLOSED: 'ACCOUNT_CLOSED',
+
+  /**
+   * Thrown by the account service when the maximum number of accounts is reached for a user (max 5).
+   */
+  MAXIMUM_ACCOUNTS_REACHED: 'MAXIMUM_ACCOUNTS_REACHED',
+
+  /**
+   * Thrown by the account service when the account has a non zero balance and cannot be closed.
+   */
+  ACCOUNT_HAS_BALANCE: 'ACCOUNT_HAS_BALANCE',
 
   // ─── Validation ─────────────────────────────────────────────────────────────
   /** Thrown when request body/query/params fail Zod schema validation */
