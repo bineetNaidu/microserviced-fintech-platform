@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  --color-brand-bg-light: #fcfcfd;
+  --color-brand-fg-light: #09090b;
+  --color-brand-border-light: #e4e4e7;
+  --color-brand-accent: #2563eb;
+  --color-brand-accent-hover: #1d4ed8;
+  --color-brand-muted-light: #71717a;
+}
+
+:root {
+  --background: var(--color-brand-bg-light);
+  --foreground: var(--color-brand-fg-light);
+  --border: var(--color-brand-border-light);
+  --muted: var(--color-brand-muted-light);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+/* Elegant Monospace styling for monetary/ledger balances */
+.ledger-number {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+}
+
+/* Swiss Editorial styled elements */
+.swiss-card {
+  border: 1px solid var(--border);
+  background-color: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.swiss-card:hover {
+  border-color: #09090b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.swiss-input {
+  border: 1px solid var(--border);
+  background-color: #ffffff;
+  font-family: var(--font-sans);
+  transition: border-color 0.15s ease, outline-color 0.15s ease;
+}
+
+.swiss-input:focus {
+  border-color: var(--foreground);
+  outline: none;
+}
