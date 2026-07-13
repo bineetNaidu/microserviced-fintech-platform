@@ -51,9 +51,15 @@ export const ApiRoutes = {
   Users: {
     v1: {
       GetProfile: '/v1/profile',
+      GetProfileAlt: '/v1/users/me',
+      CreateProfile: '/v1/profile/create',
       UpdateProfile: '/v1/profile/update',
+      UpdateProfileAlt: '/v1/users/me',
       SubmitKyc: '/v1/kyc/submit',
+      SubmitKycAlt: '/v1/users/me/kyc-submissions',
       GetKycStatus: '/v1/kyc/status',
+      GetInternalProfile: '/v1/users/internal/:userId',
+      GetInternalProfileAlt: '/v1/internal/:userId',
     },
   },
 
