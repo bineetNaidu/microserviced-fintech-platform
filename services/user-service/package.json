@@ -1,0 +1,40 @@
+{
+  "name": "@fintech/user-service",
+  "version": "1.0.0",
+  "main": "dist/server.js",
+  "types": "dist/server.d.ts",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "npm run clean",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "ts-node src/db/migrate.ts"
+  },
+  "dependencies": {
+    "@fintech/shared-config": "*",
+    "@fintech/shared-db": "*",
+    "@fintech/shared-errors": "*",
+    "@fintech/shared-events": "*",
+    "@fintech/shared-messaging": "*",
+    "@fintech/shared-middleware": "*",
+    "@fintech/shared-types": "*",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "express": "^4.22.2",
+    "ioredis": "^5.11.1",
+    "jose": "^5.10.0",
+    "pg": "^8.22.0",
+    "uuid": "^14.0.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.1",
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  }
+}
