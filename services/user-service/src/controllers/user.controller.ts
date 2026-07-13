@@ -170,7 +170,7 @@ export class UserController {
     try {
       const { userId } = req.params;
 
-      const profile = await this.userService.getProfile(userId[0]);
+      const profile = await this.userService.getProfile(userId);
 
       res.status(200).json({
         success: true,
