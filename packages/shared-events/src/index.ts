@@ -7,3 +7,4 @@ export * from './domain/user.events';
 export * from './domain/auth.events';
 export * from './domain/audit.events';
 export * from './domain/operations.events';
+export * from './domain/ledger.events';
