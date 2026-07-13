@@ -66,6 +66,9 @@ declare global {
 const PUBLIC_PATH_PREFIXES = [
   `${ApiRoutes.ApiPrefixes.Auth}${ApiRoutes.Auth.v1.Login}`,
   `${ApiRoutes.ApiPrefixes.Auth}${ApiRoutes.Auth.v1.Register}`,
+  `${ApiRoutes.ApiPrefixes.Auth}${ApiRoutes.Auth.v1.VerifyEmail}`,
+  `${ApiRoutes.ApiPrefixes.Auth}${ApiRoutes.Auth.v1.ForgotPassword}`,
+  `${ApiRoutes.ApiPrefixes.Auth}${ApiRoutes.Auth.v1.ResetPassword}`,
   '/healthz',
   '/readyz',
 ] as const;
