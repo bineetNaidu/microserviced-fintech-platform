@@ -1,0 +1,31 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "references": [
+    {
+      "path": "../../packages/shared-types"
+    },
+    {
+      "path": "../../packages/shared-errors"
+    },
+    {
+      "path": "../../packages/shared-config"
+    },
+    {
+      "path": "../../packages/shared-events"
+    },
+    {
+      "path": "../../packages/shared-db"
+    },
+    {
+      "path": "../../packages/shared-messaging"
+    },
+    {
+      "path": "../../packages/shared-middleware"
+    }
+  ]
+}
