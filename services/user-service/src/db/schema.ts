@@ -83,7 +83,7 @@ export const kycSubmissions = pgTable('kyc_submissions', {
  * Handles idempotent AMQP consumer registrations to prevent duplicate processing of event envelopes.
  */
 export const inboxMessages = pgTable('inbox_messages', {
-  id: uuid('id').primaryKey(), // The eventId from the EventEnvelope
+  id: varchar('id', { length: 26 }).primaryKey(), // The eventId from the EventEnvelope (ULID)
   eventType: varchar('event_type', { length: 255 }).notNull(),
   processedAt: timestamp('processed_at', { withTimezone: true }).notNull().defaultNow(),
 });

@@ -1,0 +1,1 @@
+ALTER TABLE "inbox_messages" ALTER COLUMN "id" SET DATA TYPE varchar(26);
