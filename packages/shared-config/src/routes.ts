@@ -13,6 +13,7 @@ export const ApiRoutes = {
     Approvals: '/api/approvals',
     Operations: '/api/operations',
     Audit: '/api/audit',
+    Ledger: '/api/ledger',
   },
 
   /** Route endpoints exposed by the Authentication Service instance context */
@@ -88,6 +89,15 @@ export const ApiRoutes = {
       CreateLog: '/v1/logs',
       QueryLogs: '/v1/logs/query',
       GetByCorrelationId: '/v1/logs/correlation/:correlationId',
+    },
+  },
+
+  /** Route endpoints exposed by the Ledger Service double-entry transaction engine */
+  Ledger: {
+    v1: {
+      RecordEntry: '/v1/internal/ledger/entry',
+      GetBalance: '/v1/balance/:accountId',
+      GetBalanceLegacy: '/v1/ledger/accounts/:accountId/balance',
     },
   },
 } as const;
