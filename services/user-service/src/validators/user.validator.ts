@@ -26,16 +26,14 @@ export const updateProfileSchema = z.object({
   postalCode: z.string().optional().nullable(),
   country: z.string().length(2, 'Country must be a 2-character ISO code (e.g. IN)').optional(),
   preferences: z
-    .zodType(
-      z.object({
-        language: z.string().length(2).optional(),
-        timezone: z.string().optional(),
-        emailNotificationsEnabled: z.boolean().optional(),
-        smsNotificationsEnabled: z.boolean().optional(),
-        pushNotificationsEnabled: z.boolean().optional(),
-        transferNotificationThreshold: z.number().min(0).optional(),
-      }),
-    )
+    .object({
+      language: z.string().length(2).optional(),
+      timezone: z.string().optional(),
+      emailNotificationsEnabled: z.boolean().optional(),
+      smsNotificationsEnabled: z.boolean().optional(),
+      pushNotificationsEnabled: z.boolean().optional(),
+      transferNotificationThreshold: z.number().min(0).optional(),
+    })
     .optional(),
 });
 
